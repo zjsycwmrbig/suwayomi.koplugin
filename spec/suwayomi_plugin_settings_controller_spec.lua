@@ -186,6 +186,10 @@ local function installController(options)
                 state.settings_menu_options = menu_options
                 return items
             end,
+            showChoiceDialog = function(dialog_options)
+                state.language_dialog = dialog_options
+                return dialog_options
+            end,
             showLoginDialog = function(dialog_options)
                 state.login_dialog_options = dialog_options
             end,
@@ -364,6 +368,25 @@ describe("suwayomi/plugin/settings_controller", function()
             "showDownloadDirectoryDialog",
             "buildSettingsMenu",
         })
+    end)
+
+    it("saves plugin language and rebuilds Settings immediately, retaining the old language on write failure", function()
+        local plugin, state = installController()
+        local settings = require("suwayomi/settings")
+        local switches = {}
+        plugin.showMainTab = function(_, tab) switches[#switches + 1] = tab end
+        local menu = plugin:buildSettingsMenu()
+        menu[6].callback(menu)
+        assert.are.same({ { value = "zh_CN", text = "中文" }, { value = "en", text = "English" } }, state.language_dialog.choices)
+        state.language_dialog.onSelect("zh_CN")
+        assert.are.equal("zh_CN", settings:loadPluginLanguage())
+        assert.are.same({ "settings" }, switches)
+        assert.are.equal("语言 / Language: 中文", menu[6].text_func())
+        settings.savePluginLanguage = function() return nil, "write failed" end
+        state.language_dialog.onSelect("en")
+        assert.are.equal("zh_CN", settings:loadPluginLanguage())
+        assert.are.equal("write failed", state.messages[#state.messages])
+        assert.are.equal(1, #switches)
     end)
 
     it("builds settings menu callbacks and saves login changes", function()

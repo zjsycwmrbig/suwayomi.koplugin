@@ -73,7 +73,15 @@ needed), then add individual chapters or another range. Ranges follow the
 currently displayed, filtered list, include both endpoints, and preserve previous
 selections. The second tap completes range mode; subsequent taps toggle one row.
 
-The home **Downloads** entry manages device-local work across manga. **Pause all
+Main screens share an icon-and-label bottom bar: **Library**, **Browse**,
+**Downloads**, and **Settings**. The plugin opens Library directly. Switching tabs
+retires the previous screen branch while device downloads continue.
+Choose **Settings > 语言 / Language** for **中文** or **English**; the choice is
+saved and takes effect immediately without changing KOReader's language. Before
+an explicit choice, a Chinese KOReader locale selects Chinese; others use English.
+Settings also contains **Sync** and **Close plugin**.
+
+The **Downloads** tab manages device-local work across manga. **Pause all
 downloads** stops current transfer attempts while keeping their jobs, retry
 budgets, and destinations. Pause survives restart and also holds newly queued
 work. **Resume all downloads** restarts interrupted chapter attempts; it does not

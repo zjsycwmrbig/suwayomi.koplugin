@@ -72,7 +72,9 @@ function Navigator:_wrapCloseCallback(entry)
             return nil
         end
 
-        if navigator:isCurrent(widget) then
+        -- Native Menu:onClose first returns from a submenu without closing the widget.
+        local in_submenu = type(widget.item_table_stack) == "table" and #widget.item_table_stack > 0
+        if navigator:isCurrent(widget) and not in_submenu then
             navigator:pop(widget)
         end
         return original_on_close(...)

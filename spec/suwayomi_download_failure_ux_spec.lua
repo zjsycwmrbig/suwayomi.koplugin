@@ -172,7 +172,7 @@ describe("download failure user actions", function()
             plugin[name] = method
         end
         local home = require("suwayomi/plugin/home").methods
-        for _, name in ipairs({ "showHome", "buildHomeActions", "refreshHomeDownloads" }) do
+        for _, name in ipairs({ "showQuickActions", "buildHomeActions", "refreshHomeDownloads" }) do
             plugin[name] = home[name]
         end
         function plugin:getDownloadQueue() return self.queue end
@@ -388,7 +388,7 @@ describe("download failure user actions", function()
     end)
 
     it("refreshes the visible home failure count after real failure, retry, and clear actions", function()
-        local home = plugin:showHome()
+        local home = plugin:showQuickActions()
         assert.are.equal("Downloads", home.actions[3].text)
         failDownload(full_error, false)
         assert.are.same({ home }, stack)

@@ -18,6 +18,21 @@ local SuwayomiSettings = {
     store = nil,
 }
 
+function SuwayomiSettings:loadPluginLanguage()
+    local language = self:getStore():readKey("plugin_language")
+    if language == "en" or language == "zh_CN" then return language end
+    local reader = _G.G_reader_settings
+    local system_language = reader and reader:readSetting("language")
+    return type(system_language) == "string" and system_language:match("^zh") and "zh_CN" or "en"
+end
+
+function SuwayomiSettings:savePluginLanguage(language)
+    if language ~= "en" and language ~= "zh_CN" then return nil, "Unsupported language" end
+    local ok, err = self:getStore():saveKey("plugin_language", language)
+    if not ok then return nil, err end
+    return language
+end
+
 local DEFAULT_CREDENTIALS = {
     server_url = "",
     username = "",

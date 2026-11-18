@@ -129,7 +129,7 @@ describe("suwayomi plugin", function()
 
     it("keeps the Suwayomi hub available explicitly", function()
         local plugin = build_plugin()
-        plugin:showHome()
+        plugin:showQuickActions()
 
         assert.are.equal("Library", runtime.shown_home_dialog.actions[1].text)
         assert.are.equal("Browse", runtime.shown_home_dialog.actions[2].text)
@@ -325,7 +325,7 @@ describe("suwayomi plugin", function()
             return failed_count
         end
 
-        local dialog = plugin:showHome()
+        local dialog = plugin:showQuickActions()
         assert.are.equal("Downloads", dialog.actions[3].text)
 
         failed_count = 2
@@ -357,7 +357,7 @@ describe("suwayomi plugin", function()
         function queue:getFailedCount()
             return failed_count
         end
-        local dialog = plugin:showHome()
+        local dialog = plugin:showQuickActions()
         assert.are.equal("Downloads · 1 failed", dialog.actions[3].text)
 
         dialog.onClose()
@@ -368,7 +368,7 @@ describe("suwayomi plugin", function()
         assert.is_nil(plugin.current_home_dialog)
         assert.is_false(plugin:isSuwayomiScreenActive(dialog))
 
-        local reopened = plugin:showHome()
+        local reopened = plugin:showQuickActions()
         assert.are.equal("Downloads · 2 failed", reopened.actions[3].text)
         plugin:getNavigation():pop(reopened)
         failed_count = 0
@@ -518,7 +518,7 @@ describe("suwayomi plugin", function()
             end,
         })
 
-        plugin:showHome()
+        plugin:showQuickActions()
         runtime.shown_home_dialog.actions[1].callback()
 
         assert.are.equal("library", plugin.delegated_action)
@@ -531,7 +531,7 @@ describe("suwayomi plugin", function()
             end,
         })
 
-        plugin:showHome()
+        plugin:showQuickActions()
         runtime.shown_home_dialog.actions[6].callback()
 
         assert.is_true(plugin.closed_plugin)
@@ -542,7 +542,7 @@ describe("suwayomi plugin", function()
         local library = { name = "library" }
 
         plugin:trackSuwayomiScreen("library", library)
-        plugin:showHome()
+        plugin:showQuickActions()
 
         assert.is_true(plugin:isSuwayomiScreenActive(runtime.shown_home_dialog))
         assert.is_false(runtime.shown_home_dialog.actions[6].close_before_select)
@@ -563,7 +563,7 @@ describe("suwayomi plugin", function()
         plugin:trackSuwayomiScreen("browse-sources", sources)
         plugin:trackSuwayomiScreen("source-filters", filter_editor)
         plugin:trackSuwayomiScreen("saved-filters", saved_filters)
-        plugin:showHome()
+        plugin:showQuickActions()
 
         runtime.shown_home_dialog.actions[6].callback()
 
@@ -590,7 +590,7 @@ describe("suwayomi plugin", function()
         sources.close_callback()
         plugin:trackSuwayomiScreen("source-filters", filter_editor)
         plugin:trackSuwayomiScreen("browse-results", browse_results)
-        plugin:showHome()
+        plugin:showQuickActions()
 
         runtime.shown_home_dialog.actions[6].callback()
 
@@ -612,7 +612,7 @@ describe("suwayomi plugin", function()
         })
 
         plugin:trackSuwayomiScreen("browse", browse)
-        plugin:showHome()
+        plugin:showQuickActions()
         runtime.shown_home_dialog.onClose()
         runtime.shown_home_dialog.actions[1].callback()
 
@@ -624,7 +624,7 @@ describe("suwayomi plugin", function()
     it("untracks Suwayomi home when a normal home action closes the dialog", function()
         local plugin = build_plugin()
 
-        plugin:showHome()
+        plugin:showQuickActions()
         assert.is_true(plugin:isSuwayomiScreenActive(runtime.shown_home_dialog))
 
         runtime.shown_home_dialog.onClose()

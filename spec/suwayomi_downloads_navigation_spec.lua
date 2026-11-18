@@ -105,6 +105,7 @@ describe("Downloads chapter navigation", function()
             return { start = function(options) request = options; return {} end, cancel = function() end }
         end
         plugin = require("main")({})
+        plugin.getBottomNavigation = function() return nil end
         plugin.getTitleBarMenuOptions = function() return {} end
         plugin.getVisibleChapters = function(_, chapters) return chapters end
         plugin.getSelectedChapterCount = function() return 0 end

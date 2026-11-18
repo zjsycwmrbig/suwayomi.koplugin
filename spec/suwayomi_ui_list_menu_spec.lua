@@ -70,6 +70,7 @@ describe("suwayomi/ui/list_menu", function()
             "suwayomi/ui/thumbnail_cache",
             "suwayomi/ui/thumbnail_worker",
             "suwayomi/ui/menu_utils",
+            "suwayomi/ui/bottom_navigation",
         }
         package.loaded["suwayomi/ui/list_menu"] = nil
         for _, name in ipairs(stubbed_modules) do
@@ -191,6 +192,23 @@ describe("suwayomi/ui/list_menu", function()
             package.loaded[name] = nil
         end
         package.loaded["suwayomi/ui/list_menu"] = nil
+    end)
+
+    it("reserves bottom navigation height before constructing native paging geometry", function()
+        local attached
+        package.preload["suwayomi/ui/bottom_navigation"] = function() return {
+            height = function() return 72 end,
+            attach = function(menu, navigation) attached = { menu, navigation } end,
+        } end
+        local ListMenu = require("suwayomi/ui/list_menu")
+        ListMenu.updateItems = function() end
+        local navigation = { active = "library" }
+        local menu = ListMenu.show{ title = "Library", bottom_navigation = navigation }
+        assert.are.equal(728, created_options.height)
+        assert.are.same({ menu, navigation }, attached)
+        local ordinary = ListMenu.show{ title = "Chapters" }
+        assert.is_nil(ordinary.height)
+        assert.are.equal(menu, attached[1])
     end)
 
     it("creates KOReader file-manager-style list menus by default", function()

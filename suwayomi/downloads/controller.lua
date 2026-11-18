@@ -541,6 +541,7 @@ function Methods:showDownloads()
     local queue = self:getDownloadQueue()
     local snapshot = queue:getSnapshot()
     local options, trackMenu = self:withDownloadsMenuTracking(self:getDownloadsMenuOptions(snapshot))
+    options.bottom_navigation = self.getBottomNavigation and self:getBottomNavigation("downloads")
 
     local menu
     local callbacks = self:getDownloadsMenuCallbacks(function() return menu end)

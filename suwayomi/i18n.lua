@@ -1,7 +1,7 @@
 -- Boundary: plugin-owned i18n facade.
 --
 -- Responsibility: wrap KOReader gettext/template helpers behind a stable plugin
--- API for runtime UI strings.
+-- API for runtime UI strings, with a plugin-only Chinese/English override.
 -- Owned state: cached helper functions and plugin catalog tables only.
 -- Dependencies: KOReader gettext and ffi/util when present.
 -- External data: callers decide which values are user/server data and must not
@@ -17,6 +17,7 @@ local cached_pgettext
 local cached_template
 local cached_catalogs = {}
 local test_locale
+local plugin_language
 
 local EMPTY_CATALOG = {
     translation = {},
@@ -261,6 +262,8 @@ local function loadCatalogForLocale(locale)
 end
 
 local function activeCatalog()
+    if plugin_language == "en" then return EMPTY_CATALOG end
+    if plugin_language == "zh_CN" then return loadCatalogForLocale("zh_CN") end
     local locale = readKoreaderLanguage()
     if not Locales.normalize(locale) then
         return nil
@@ -354,6 +357,11 @@ function I18n.reset()
     cached_template = nil
     cached_catalogs = {}
     test_locale = nil
+    plugin_language = nil
+end
+
+function I18n.setLanguage(language)
+    plugin_language = language == "zh_CN" and "zh_CN" or "en"
 end
 
 function I18n.setLocaleForTests(locale)

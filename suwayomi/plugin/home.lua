@@ -1,6 +1,6 @@
 -- Boundary: HomeController.
 --
--- Responsibility: Owns the plugin home dialog, main-menu entry, screen-bounded messages, and loading helpers.
+-- Responsibility: Owns main-tab navigation, main-menu entry, messages, and loading helpers.
 -- Owned state: Plugin UI state only; it does not own persisted settings or network state.
 -- Dependencies: KOReader UI helpers and plugin modules; text measurement and viewer widgets load when messages are shown.
 -- External data: callers must continue to treat API responses, settings values, worker files, and filesystem paths as untrusted until checked locally.
@@ -128,7 +128,44 @@ function Methods:buildHomeActions(failed_count)
 end
 
 
+function Methods:getBottomNavigation(active)
+    return {
+        active = active,
+        tabs = {
+            { id = "library", text = I18n.t("Library"), icon = "book.opened" },
+            { id = "browse", text = I18n.t("Browse"), icon = "appbar.search" },
+            { id = "downloads", text = I18n.t("Downloads"), icon = "move.down" },
+            { id = "settings", text = I18n.t("Settings"), icon = "appbar.settings" },
+        },
+        on_select = function(tab) return self:showMainTab(tab) end,
+    }
+end
+
+function Methods:showMainTab(tab)
+    if tab ~= "library" and tab ~= "browse" and tab ~= "downloads" and tab ~= "settings" then
+        return nil
+    end
+    -- Closing screens retires their requests; the process-owned download queue continues.
+    if self.cancelSourceFetchWorker then self:cancelSourceFetchWorker() end
+    self:getNavigation():closeAll()
+    self.current_main_tab = tab
+    if tab == "library" then return self:showLibrary() end
+    if tab == "downloads" then return self:showDownloads() end
+    if tab == "settings" then
+        return self:showTopLevelScreen("settings", function() return self:showSettings() end)
+    end
+    -- Display a usable shell immediately, including while sources load or fail.
+    self:showSourceList({}, { force_new = true })
+    self:browseSuwayomi()
+    return self.current_sources_menu
+end
+
 function Methods:showHome()
+    return self:showMainTab("library")
+end
+
+-- Retain the compact actions dialog for callers that need queue status/actions.
+function Methods:showQuickActions()
     local failed_count = downloadFailureCount(self)
     local dialog
     dialog = SuwayomiUI.showHomeDialog({
@@ -138,20 +175,14 @@ function Methods:showHome()
                 self.current_home_dialog = nil
                 self.current_home_failed_count = nil
             end
-            if self.suwayomi_navigation then
-                self.suwayomi_navigation:pop(dialog)
-            end
+            if self.suwayomi_navigation then self.suwayomi_navigation:pop(dialog) end
         end,
     }, function(action)
-        if action and action.callback then
-            action.callback()
-        end
+        if action and action.callback then action.callback() end
     end)
     self.current_home_dialog = dialog
     self.current_home_failed_count = failed_count
-    if dialog and self.trackSuwayomiScreen then
-        self:trackSuwayomiScreen("home", dialog)
-    end
+    if dialog and self.trackSuwayomiScreen then self:trackSuwayomiScreen("home", dialog) end
     return dialog
 end
 

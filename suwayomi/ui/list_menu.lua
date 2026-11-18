@@ -2,7 +2,7 @@
 --
 -- Responsibility: render source/chapter lists and optional manga cover grids
 -- with cached thumbnails, preserving KOReader Menu navigation, title bars, paging
--- rows, and callbacks.
+-- rows, callbacks, and opt-in main-screen bottom navigation.
 -- Owned state: visible thumbnail download jobs for the menu instance.
 -- Dependencies: KOReader Menu/widget primitives and image decoder, thumbnail
 -- cache/worker, and shared menu utilities.
@@ -1063,6 +1063,9 @@ function ListMenu.updateItems(menu, select_number, no_recalculate_dimen)
     if menu._suwayomi_on_view_menu then
         table.insert(menu.layout, { menu._suwayomi_view_button })
     end
+    if menu._suwayomi_bottom_focus then
+        table.insert(menu.layout, menu._suwayomi_bottom_focus)
+    end
 
     UIManager:setDirty(menu.show_parent, function()
         local refresh_dimen = old_dimen and old_dimen:combine(menu.dimen) or menu.dimen
@@ -1216,6 +1219,8 @@ function ListMenu.show(options)
     end
     local menu = Menu:new(menu_utils.applyNativeTitleBarStyle{
         title = options.title,
+        height = options.bottom_navigation and Screen:getHeight()
+            - require("suwayomi/ui/bottom_navigation").height() or nil,
         subtitle = subtitle,
         title_bar_left_icon = options.title_bar_left_icon,
         -- Native rows leave no title width for long status text; install our renderer first.
@@ -1243,6 +1248,9 @@ function ListMenu.show(options)
     applyOptions(menu, options)
     menu._suwayomi_pending_itemnumber = options.itemnumber
     menu:updateItems()
+    if options.bottom_navigation then
+        require("suwayomi/ui/bottom_navigation").attach(menu, options.bottom_navigation)
+    end
     UIManager:show(menu)
     return menu
 end

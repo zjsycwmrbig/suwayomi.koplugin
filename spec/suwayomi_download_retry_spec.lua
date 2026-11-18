@@ -71,7 +71,7 @@ describe("download retry across live menus", function()
     end
 
     local function showScreens()
-        home = plugin:showHome()
+        home = plugin:showQuickActions()
         assert.are.equal("Downloads · 1 failed", home.actions[3].text)
         chapters_menu = { item_table = {} }
         plugin.current_chapter_context = { manga = manga, chapters = { chapter } }
@@ -189,6 +189,7 @@ describe("download retry across live menus", function()
             return dialog
         end
         plugin = require("main")({})
+        plugin.getBottomNavigation = function() return nil end
         plugin.getTitleBarMenuOptions = function() return {} end
         plugin.getVisibleChapters = function(_, chapters) return chapters end
         plugin.getSelectedChapterCount = function() return 0 end
@@ -311,7 +312,7 @@ describe("download retry across live menus", function()
             assert.are.equal("failed", queue:findPersistentJob(active.key).state)
 
             assert.are.equal("Failed", downloads_menu.item_table[1].mandatory)
-            assert.are.equal("Downloads · 1 failed", plugin:showHome().actions[3].text)
+            assert.are.equal("Downloads · 1 failed", plugin:showQuickActions().actions[3].text)
         end)
     end
 

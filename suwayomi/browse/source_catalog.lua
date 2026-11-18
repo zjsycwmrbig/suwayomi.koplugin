@@ -317,6 +317,7 @@ function Methods:showSourceList(sources, options)
             end
         end
         menu_options.thumbnail_credentials = options.credentials
+        menu_options.bottom_navigation = self.getBottomNavigation and self:getBottomNavigation("browse")
         return menu_options
     end
 
@@ -399,7 +400,7 @@ function Methods:showCachedSources(cache, options)
 
     self:showSourceList(filtered_sources, {
         credentials = options.credentials,
-        force_new = true,
+        force_new = self.current_sources_menu == nil,
         all_sources = cache and cache.sources or {},
     })
     return true

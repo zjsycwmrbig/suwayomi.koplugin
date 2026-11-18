@@ -104,6 +104,21 @@ describe("suwayomi/settings", function()
     after_each(function()
         package.preload.datastorage = nil
         package.preload.luasettings = nil
+        _G.G_reader_settings = nil
+    end)
+
+    it("persists only the two plugin languages and defaults from the reader language", function()
+        local settings = require("suwayomi/settings")
+        assert.are.equal("en", settings:loadPluginLanguage())
+        _G.G_reader_settings = { readSetting = function() return "zh_TW" end }
+        assert.are.equal("zh_CN", settings:loadPluginLanguage())
+        assert.is_nil(stored_data.plugin_language)
+        assert.are.equal("en", settings:savePluginLanguage("en"))
+        assert.are.equal("en", settings:loadPluginLanguage())
+        assert.are.equal("zh_CN", settings:savePluginLanguage("zh_CN"))
+        assert.are.equal("zh_CN", stored_data.plugin_language)
+        assert.is_nil(settings:savePluginLanguage("de"))
+        assert.are.equal("zh_CN", stored_data.plugin_language)
     end)
 
     it("loads persisted credentials from the KOReader settings directory", function()

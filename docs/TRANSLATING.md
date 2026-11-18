@@ -6,6 +6,12 @@ missing translations fall back to English on KOReader devices.
 
 ## Locales
 
+The plugin Settings language picker offers Chinese (`zh_CN`) and English (`en`)
+independently of KOReader. Without an explicit choice, Chinese reader locales
+select Chinese and all other reader locales select English. Existing upstream
+catalogs remain available for translators; the picker exposes only these two
+languages. Missing Chinese translations fall back to English.
+
 Tracked catalogs:
 
 - `ar`

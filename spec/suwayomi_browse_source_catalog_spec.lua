@@ -574,6 +574,16 @@ describe("suwayomi/browse/source_catalog", function()
         assert.are.equal("source_language_filter", controller.title_menu_options.actions[2].id)
     end)
 
+    it("fills the existing Browse shell from cache without stacking a second menu", function()
+        local controller = buildController(loadCatalog())
+        local shell = { kind = "browse-shell" }
+        controller.current_sources_menu = shell
+        assert.is_true(controller:showCachedSources({ sources = { { id = "english", lang = "en" } } }))
+        assert.are.equal(shell, controller.current_sources_menu)
+        assert.is_nil(ui_calls.shown)
+        assert.are.equal("english", ui_calls.updated.sources[1].id)
+    end)
+
     it("updates an existing source menu and keeps global search in the title menu", function()
         local catalog = loadCatalog()
         local controller = buildController(catalog)

@@ -220,6 +220,7 @@ function SuwayomiPlugin:isBookMode()
 end
 
 function SuwayomiPlugin:init()
+    I18n.setLanguage(SuwayomiSettings:loadPluginLanguage())
     if SuwayomiAPI.setDebugLogger then
         SuwayomiAPI.setDebugLogger(SuwayomiDebug.log)
     end

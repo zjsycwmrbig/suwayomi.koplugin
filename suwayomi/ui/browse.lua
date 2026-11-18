@@ -43,6 +43,7 @@ function BrowseUI.showSourcesMenu(sources, onSelectCallback, options)
 
     return getListMenu().show{
         title = I18n.t("Suwayomi Sources"),
+        bottom_navigation = options.bottom_navigation,
         title_bar_left_icon = options and options.title_bar_left_icon,
         fixed_item_heights = options.fixed_item_heights ~= false,
         item_table = ListRows.buildSourceMenuTable(sources, {
@@ -1157,6 +1158,7 @@ function BrowseUI.showLibraryCategoryMenu(categories, onSelectCallback, options)
     options = options or {}
     return getListMenu().show{
         title = I18n.t("Suwayomi Library"),
+        bottom_navigation = options.bottom_navigation,
         subtitle = options.library_status,
         title_bar_left_icon = options.title_bar_left_icon,
         item_table = buildLibraryCategoryRows(categories, onSelectCallback),
@@ -1195,6 +1197,7 @@ function BrowseUI.showLibraryMangaMenu(manga_list, onSelectCallback, options)
     options = options or {}
     return getListMenu().show{
         title = I18n.t("Suwayomi Library"),
+        bottom_navigation = options.bottom_navigation,
         subtitle = options.library_status,
         title_bar_left_icon = options.title_bar_left_icon,
         item_table = buildLibraryMangaMenuTable(manga_list, onSelectCallback, options),

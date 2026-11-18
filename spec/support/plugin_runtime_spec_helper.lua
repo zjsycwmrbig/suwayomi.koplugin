@@ -317,6 +317,7 @@ function Helper.install(options)
     package.preload["suwayomi/settings"] = function()
         local checked = require("spec/support/checked_queue_settings")()
         return {
+            loadPluginLanguage = function() return "en" end,
             load = function()
                 return options.credentials or {
                     server_url = "https://suwayomi.example",

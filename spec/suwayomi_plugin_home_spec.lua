@@ -82,6 +82,48 @@ describe("suwayomi/plugin/home", function()
         assert.are.equal("tx:Close plugin", actions[#actions].text)
     end)
 
+    it("opens the Library body and replaces the old branch when changing tabs", function()
+        helper.stubControllerDependencies()
+        package.loaded["suwayomi/plugin/home"] = nil
+        local methods = require("suwayomi/plugin/home").methods
+        local events = {}
+        local plugin = setmetatable({
+            getNavigation = function() return { closeAll = function() events[#events + 1] = "close" end } end,
+            cancelSourceFetchWorker = function() events[#events + 1] = "cancel" end,
+            showLibrary = function() events[#events + 1] = "library"; return "library body" end,
+            showDownloads = function() events[#events + 1] = "downloads"; return "downloads body" end,
+        }, { __index = methods })
+        assert.are.equal("library body", plugin:showHome())
+        local navigation = plugin:getBottomNavigation("library")
+        assert.are.equal(4, #navigation.tabs)
+        assert.are.equal("book.opened", navigation.tabs[1].icon)
+        assert.are.equal("appbar.settings", navigation.tabs[4].icon)
+        assert.are.equal("downloads body", navigation.on_select("downloads"))
+        assert.are.equal("downloads", plugin.current_main_tab)
+        assert.are.same({ "cancel", "close", "library", "cancel", "close", "downloads" }, events)
+        assert.is_nil(plugin:showMainTab("invalid"))
+        assert.are.equal(6, #events)
+    end)
+
+    it("keeps a Browse shell visible while source loading runs", function()
+        helper.stubControllerDependencies()
+        package.loaded["suwayomi/plugin/home"] = nil
+        local methods = require("suwayomi/plugin/home").methods
+        local events = {}
+        local plugin = setmetatable({
+            getNavigation = function() return { closeAll = function() end } end,
+            showSourceList = function(self, rows, options)
+                assert.are.same({}, rows)
+                assert.is_true(options.force_new)
+                self.current_sources_menu = {}
+                events[#events + 1] = "shell"
+            end,
+            browseSuwayomi = function() events[#events + 1] = "request" end,
+        }, { __index = methods })
+        assert.are.equal(plugin:showMainTab("browse"), plugin.current_sources_menu)
+        assert.are.same({ "shell", "request" }, events)
+    end)
+
     it("cleans marker i18n stubs between tests", function()
         assert.is_nil(package.preload["suwayomi/i18n"])
         assert.is_nil(package.loaded["suwayomi/i18n"])

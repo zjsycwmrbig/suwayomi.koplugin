@@ -171,6 +171,26 @@ describe("suwayomi/navigation", function()
         assert.is_false(navigator:contains(widget))
     end)
 
+    it("keeps a settings submenu tracked until its root actually closes", function()
+        local navigator = load_navigation().new(ui_manager)
+        local widget = { item_table_stack = { { title = "Settings" } } }
+        function widget:onClose()
+            if #self.item_table_stack > 0 then
+                table.remove(self.item_table_stack)
+            else
+                ui_manager:close(self)
+            end
+            return true
+        end
+        navigator:push("settings", widget)
+        widget:onClose()
+        assert.is_true(navigator:isCurrent(widget))
+        assert.are.same({}, closed)
+        widget:onClose()
+        assert.is_false(navigator:contains(widget))
+        assert.are.same({ widget }, closed)
+    end)
+
     it("current tracked widget onClose only untracks that widget", function()
         local Navigation = load_navigation()
         local closed_routes = {}

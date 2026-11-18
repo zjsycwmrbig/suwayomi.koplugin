@@ -214,6 +214,7 @@ local function menuOptions(self, session, manga_list)
         end,
     }) or {}
     options.thumbnail_credentials = session.credentials
+    options.bottom_navigation = self.plugin.getBottomNavigation and self.plugin:getBottomNavigation("library")
     local information = session.information == "loaded" and I18n.t("Loaded information")
         or (session.saved and I18n.t("Saved information") or I18n.t("Reconstructed information"))
     if not session.saved and #session.listing.manga == 0 then information = I18n.t("No saved information") end

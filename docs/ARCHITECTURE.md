@@ -144,6 +144,16 @@ Expired chapter controls report their rejection without replaying the command. B
 
 Plugin-authored UI strings pass through [i18n](TRANSLATING.md); server values remain data. Diagnostics use opt-in redaction. Downloads shows persisted errors and inspection outcomes; background retry/cleanup remains quiet except actionable warnings.
 
+`plugin/home.lua` routes Library, Browse, Downloads, and Settings tabs. Tab changes
+close the old navigation branch and cancel source fetches without stopping the
+process-owned download service. Main menus opt into `ui/bottom_navigation.lua`
+through `bottom_navigation` options; `list_menu.lua` constructs the native menu
+at a reduced height before appending the footer, preserving paging space.
+Chapter/detail screens keep their normal return behavior. `plugin_language` in
+the checked settings store selects `zh_CN` or `en`; plugin initialization and
+language changes set the i18n override without mutating KOReader gettext state.
+Changing language reconstructs Settings, including the footer and submenus.
+
 ## Data And Packaging Boundaries
 
 Server downloaded state never proves device-local availability. New archives use the source-scoped layout in [AGENTS.md](../AGENTS.md#code-and-data-safety); path construction sanitizes external names and recognizes supported older filenames. Settings, API parsing, worker results, and progress files validate input at their boundaries.

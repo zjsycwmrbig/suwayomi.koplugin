@@ -348,6 +348,27 @@ describe("suwayomi/i18n", function()
         return state
     end
 
+    it("switches Chinese and English without changing native gettext or reader settings", function()
+        _G.G_reader_settings = { readSetting = function() return "de" end }
+        local native = installCatalogGettext{ catalogs = {
+            zh_CN = { translation = { Library = "书库", ["%1 chapter"] = { [0] = "%1 章" } },
+                context = { view = { List = "列表" } }, getPlural = function() return 0 end },
+        } }
+        local i18n = require("suwayomi/i18n")
+        i18n.setLanguage("zh_CN")
+        assert.are.equal("书库", i18n.t("Library"))
+        assert.are.equal("3 章", i18n.count(3, "%1 chapter", "%1 chapters"))
+        assert.are.equal("列表", i18n.c("view", "List"))
+        assert.are.equal("de", native.current_lang)
+        i18n.setLanguage("en")
+        assert.are.equal("Library", i18n.t("Library"))
+        assert.are.equal("3 chapters", i18n.count(3, "%1 chapter", "%1 chapters"))
+        assert.are.equal("List", i18n.c("view", "List"))
+        assert.are.equal("de", _G.G_reader_settings:readSetting("language"))
+        i18n.setLanguage("zh_CN")
+        assert.are.equal("书库", i18n.t("Library"))
+    end)
+
     it("loads plugin catalog for the KOReader language and returns translated strings", function()
         _G.G_reader_settings = {
             readSetting = function(_, key)

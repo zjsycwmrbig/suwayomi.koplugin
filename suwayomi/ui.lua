@@ -82,6 +82,7 @@ function SuwayomiUI.showSettingsMenu(items, options)
     options = options or {}
     local menu = getListMenu().show({
         title = I18n.t("Suwayomi Settings"),
+        bottom_navigation = options.bottom_navigation,
         title_bar_left_icon = options.title_bar_left_icon,
         on_title_bar_left_tap = options.on_title_bar_left_tap,
         on_title_bar_left_hold = options.on_title_bar_left_hold,

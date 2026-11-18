@@ -83,6 +83,7 @@ end
 function Methods:showSettings()
     if SuwayomiUI.showSettingsMenu then
         return SuwayomiUI.showSettingsMenu(self:buildSettingsMenu(), {
+            bottom_navigation = self.getBottomNavigation and self:getBottomNavigation("settings"),
             title_bar_left_icon = "appbar.menu",
             on_title_bar_left_tap = function()
                 if self.showHome then
@@ -93,6 +94,28 @@ function Methods:showSettings()
         })
     end
     self:showMessage(I18n.t("Settings are unavailable."))
+end
+
+function Methods:showPluginLanguageDialog(menu)
+    return SuwayomiUI.showChoiceDialog{
+        title = "语言 / Language",
+        current = SuwayomiSettings:loadPluginLanguage(),
+        choices = { { value = "zh_CN", text = "中文" }, { value = "en", text = "English" } },
+        onSelect = function(language)
+            local saved, err = SuwayomiSettings:savePluginLanguage(language)
+            if not saved then
+                self:showMessage(err or I18n.t("Failed to save settings."))
+                return
+            end
+            I18n.setLanguage(saved)
+            if self.showMainTab then
+                self:showMainTab("settings")
+            else
+                self:closeMenu(menu)
+                self:showSettings()
+            end
+        end,
+    }
 end
 
 
@@ -701,6 +724,21 @@ function Methods:buildSettingsMenu()
                     },
                 },
             },
+        },
+        {
+            text_func = function()
+                return "语言 / Language: " .. (SuwayomiSettings:loadPluginLanguage() == "zh_CN" and "中文" or "English")
+            end,
+            keep_menu_open = true,
+            callback = function(menu) return self:showPluginLanguageDialog(menu) end,
+        },
+        {
+            text = I18n.t("Sync"), keep_menu_open = true,
+            callback = function() self:syncReadStateNow() end,
+        },
+        {
+            text = I18n.t("Close plugin"), keep_menu_open = true,
+            callback = function() self:closeSuwayomiPlugin() end,
         },
     }
 end

@@ -264,6 +264,7 @@ local function buildMenuOptions(snapshot, callbacks, options)
     options = options or {}
     return {
         title = options.title or I18n.t("Suwayomi Downloads"),
+        bottom_navigation = options.bottom_navigation,
         title_bar_left_icon = options.title_bar_left_icon,
         item_table = DownloadsUI.buildDownloadsMenuTable(snapshot, callbacks, options),
         close_callback = options.close_callback,
