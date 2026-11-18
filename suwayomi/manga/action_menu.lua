@@ -73,6 +73,7 @@ function MangaActionMenu.buildMainActions(owner, manga, options)
     local actions = {}
     local destructive_library_action
 
+    table.insert(actions, { id = "download_management", text = I18n.t("Download management") })
     if options.include_open_chapters then
         table.insert(actions, { id = "open_chapters", text = I18n.t("Open chapters") })
     end
@@ -92,17 +93,6 @@ function MangaActionMenu.buildMainActions(owner, manga, options)
             table.insert(actions, { id = "add_to_library", text = I18n.t("Add to library") })
         end
     end
-    table.insert(actions, { id = "bulk_downloads", text = I18n.t("Bulk downloads"), submenu = true })
-    table.insert(actions, {
-        id = "keep_downloaded",
-        submenu = true,
-        -- Chapter title menus retain actions; read the saved policy when opened.
-        text_func = function()
-            local limit = getDownloadAheadLimit(owner, manga)
-            return limit > 0 and I18n.f("Auto-download: %1", limit) or I18n.t("Auto-download: Off")
-        end,
-    })
-    table.insert(actions, { id = "delete_read_downloaded", text = I18n.t("Delete read downloads"), destructive = true })
     if destructive_library_action then
         table.insert(actions, destructive_library_action)
     end
@@ -134,6 +124,7 @@ end
 function MangaActionMenu.isSharedAction(action_id)
     if action_id == "manga_information"
         or action_id == "open_first_unread"
+        or action_id == "download_management"
         or action_id == "refresh_chapters"
         or action_id == "add_to_library"
         or action_id == "remove_from_library"

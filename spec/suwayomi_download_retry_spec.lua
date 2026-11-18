@@ -91,7 +91,7 @@ describe("download retry across live menus", function()
 
     local function showScreens()
         home = plugin:showQuickActions()
-        assert.are.equal("Downloads · 1 failed", home.actions[3].text)
+        for _, action in ipairs(home.actions) do assert.are_not.equal("downloads", action.id) end
         chapters_menu = { item_table = {} }
         plugin.current_chapter_context = { manga = manga, chapters = { chapter } }
         plugin.current_chapter_menu = chapters_menu
@@ -343,7 +343,6 @@ describe("download retry across live menus", function()
             assert.are.equal("failed", queue:findPersistentJob(active.key).state)
 
             assert.are.equal(1, #queue:getSnapshot().failed)
-            assert.are.equal("Downloads · 1 failed", plugin:showQuickActions().actions[3].text)
         end)
     end
 
@@ -440,7 +439,6 @@ describe("download retry across live menus", function()
                 assert.are.equal(1, #queue:getSnapshot().failed)
 
                 assert.are.equal(1, queue:getFailedCount())
-                assert.are.equal("Downloads · 1 failed", home.actions[3].text)
             end
             ui:close(detail)
             plugin:getNavigation():closeAll()

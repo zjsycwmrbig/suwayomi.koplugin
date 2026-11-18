@@ -1794,7 +1794,7 @@ describe("suwayomi/ui", function()
         assert.is_true(selected.submenu)
     end)
 
-    it("shows fresh per-manga auto-download state when retained menus reopen", function()
+    it("shows fresh per-manga auto-download choices when retained menus reopen", function()
         local ui = require("suwayomi/ui")
         package.loaded["suwayomi/manga/action_menu"] = nil
         local actions = require("suwayomi/manga/action_menu")
@@ -1805,13 +1805,6 @@ describe("suwayomi/ui", function()
             end,
         }
         local manga = { id = "m1" }
-        local retained = actions.buildMainActions(owner, manga)
-        local function parentLabel()
-            ui.showChapterActionsMenu({ actions = retained })
-            for _, row in ipairs(shown_dialog.buttons) do
-                if row[1] and row[1].id == "keep_downloaded" then return row[1].text end
-            end
-        end
         local function selectedChoice(target)
             ui.showMangaActionsMenu({ actions = actions.buildKeepDownloadedActions(owner, target) })
             local selected = {}
@@ -1824,15 +1817,11 @@ describe("suwayomi/ui", function()
             return selected
         end
 
-        local first_label = parentLabel()
         assert.are.same({ "keep_next_5_unread" }, selectedChoice(manga))
         assert.are.same({ "keep_next_10_unread" }, selectedChoice({ id = "m2" }))
         limits.m1 = 50
-        local expanded_label = parentLabel()
-        assert.are_not.equal(first_label, expanded_label)
         assert.are.same({ "keep_next_50_unread" }, selectedChoice(manga))
         limits.m1 = 0
-        assert.are_not.equal(expanded_label, parentLabel())
         assert.are.same({ "keep_next_0_unread" }, selectedChoice(manga))
         package.loaded["suwayomi/manga/action_menu"] = nil
     end)

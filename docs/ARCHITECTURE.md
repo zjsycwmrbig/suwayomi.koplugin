@@ -73,22 +73,24 @@ The optional KOReader auto-mark prompt follows an explicit nonzero policy choice
 
 ## Manual deletion and retention
 
-The Downloads hub groups active, queued, failed, and locally downloaded chapters
-by manga. A manga opens its task controls and chapter filters; chapter rows retain
-the normal Download, Delete, read-state, and Mark previous as read actions.
-Per-manga pause, cancellation, and downloaded-file removal therefore operate on
-one queue identity without changing read state or server chapters.
+Download operations are entered from a manga rather than a global Downloads tab.
+Manga information and manga action menus expose **Download management**, which
+opens that manga's chapter list directly. The title menu contains status filters,
+filter-aware selection, missing-chapter download, per-manga pause, cancellation,
+downloaded-file removal, auto-download, and chapter refresh controls. Chapter rows
+retain the normal Download, Delete, read-state, and Mark previous as read actions.
 
-The Downloads inventory has an explicit cross-manga ordinary-Delete surface.
-It observes recorded paths and bounded configured-root CBZs, omits symlinks and
-partials, deduplicates paths, and exposes record conflicts. Read cleanup uses only
-matching ledger read state, honoring pending unread. Selection is in-memory.
-Confirmation captures filesystem evidence and observed generation; acceptance
-rechecks membership/read choice, job-key and path ownership, root, generation,
-and file evidence before the ordinary deletion owner revalidates and removes
-sidecars/archive. Unregistered files gain no server identity. Out-of-root recorded
-files stay visible but cannot be removed here. Directory access/limit failures
-report an incomplete list. This is independent of archive-only manual read intent.
+The low-level inventory controller retains its cross-manga ordinary-Delete API,
+but primary navigation no longer renders that surface. It observes recorded paths
+and bounded configured-root CBZs, omits symlinks and partials, deduplicates paths,
+and exposes record conflicts. Read cleanup uses only matching ledger read state,
+honoring pending unread. Selection is in-memory. Confirmation captures filesystem
+evidence and observed generation; acceptance rechecks membership/read choice,
+job-key and path ownership, root, generation, and file evidence before the
+ordinary deletion owner revalidates and removes sidecars/archive. Unregistered
+files gain no server identity. Out-of-root recorded files stay visible but cannot
+be removed here. Directory access/limit failures report an incomplete list. This
+is independent of archive-only manual read intent.
 
 [ADR-0003](adr/0003-durable-manual-delete-intent.md) owns archive-only manual intent. The service records a captured path, root, archive generation, revision, and retry state. Queued, active, stopping, or finalizing download ownership blocks acceptance without canceling work. Read state and accepted intent commit before unlink. Immediately before removal, the processor rechecks revision, generation, containment and aliases, filesystem evidence, live reader, and download ownership. An uncertain target or unsupported identity leaves the archive intact; accepted manual removal leaves KOReader metadata intact.
 
@@ -150,9 +152,9 @@ Expired chapter controls report their rejection without replaying the command. B
 
 ## UI, localization, and diagnostics
 
-Plugin-authored UI strings pass through [i18n](TRANSLATING.md); server values remain data. Diagnostics use opt-in redaction. Downloads shows persisted errors and inspection outcomes; background retry/cleanup remains quiet except actionable warnings.
+Plugin-authored UI strings pass through [i18n](TRANSLATING.md); server values remain data. Diagnostics use opt-in redaction. Per-manga download management shows persisted errors and inspection outcomes; background retry/cleanup remains quiet except actionable warnings.
 
-`plugin/home.lua` routes Library, Browse, Downloads, and Settings tabs. Tab changes
+`plugin/home.lua` routes Library, Browse, and Settings tabs. Tab changes
 close the old navigation branch and cancel source fetches without stopping the
 process-owned download service. Main menus opt into `ui/bottom_navigation.lua`
 through `bottom_navigation` options; `list_menu.lua` constructs the native menu

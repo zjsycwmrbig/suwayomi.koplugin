@@ -419,7 +419,7 @@ end
 
 
 function Methods:formatChapterListTitle(manga)
-    local selected_count = self:getSelectedChapterCount()
+    local selected_count = self.getSelectedChapterCount and self:getSelectedChapterCount() or 0
     local title = manga and manga.title or nil
     if self.selection_mode then
         title = I18n.count(selected_count, "%1 selected", "%1 selected")
@@ -433,7 +433,7 @@ function Methods:formatChapterListTitle(manga)
 end
 
 function Methods:formatChapterListScreenTitle(manga)
-    local selected_count = self:getSelectedChapterCount()
+    local selected_count = self.getSelectedChapterCount and self:getSelectedChapterCount() or 0
     if self.selection_mode then
         return I18n.count(selected_count, "%1 selected", "%1 selected")
     end
@@ -459,7 +459,9 @@ function Methods:selectAllChapters()
     self.chapter_range_selecting, self.chapter_range_start = nil, nil
     local context = self.current_chapter_context
     local manga = context and context.manga
-    local chapters = self:getVisibleChapters(context and context.chapters or {})
+    local chapters = self.download_manager_filter
+        and self.download_manager_chapters
+        or self:getVisibleChapters(context and context.chapters or {})
 
     self.selected_chapters = {}
     for _index, chapter in ipairs(chapters) do

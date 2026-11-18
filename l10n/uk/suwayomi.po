@@ -26,6 +26,9 @@ msgstr " (розд. %1)"
 msgid " (Suwayomi id %1)"
 msgstr " (ID Suwayomi %1)"
 
+msgid "%1 (%2)"
+msgstr ""
+
 msgctxt "source filter sort summary"
 msgid "%1 - Ascending"
 msgstr "%1 - за зростанням"
@@ -298,9 +301,6 @@ msgstr ""
 
 msgid "Auto-download: %1"
 msgstr "Автозавантаження: %1"
-
-msgid "Auto-download: Off"
-msgstr "Автозавантаження: вимкнено"
 
 msgid "Automatic"
 msgstr "Автоматично"
@@ -762,6 +762,13 @@ msgid ""
 "state stay unchanged."
 msgstr ""
 
+#, fuzzy
+msgid "Delete %1 downloaded chapter from this manga?"
+msgid_plural "Delete %1 downloaded chapters from this manga?"
+msgstr[0] "Завантажені розділи збережено в %1."
+msgstr[1] "Завантажені розділи збережено в %1."
+msgstr[2] "Завантажені розділи збережено в %1."
+
 msgid ""
 "Delete %1 local chapter files and their KOReader sidecars? This cannot be "
 "undone. Server files and read flags are unchanged. %2 files are blocked."
@@ -797,6 +804,10 @@ msgid "Delete chapter settings are unavailable."
 msgstr "Налаштування видалення розділів недоступні."
 
 #, fuzzy
+msgid "Delete downloaded chapters (%1)"
+msgstr "Завантажені розділи збережено в %1."
+
+#, fuzzy
 msgid "Delete downloaded chapters for this manga"
 msgstr "Завантажені розділи збережено в %1."
 
@@ -813,14 +824,15 @@ msgstr "Видалити збережений фільтр"
 msgid "Delete from device"
 msgstr "Видалити з пристрою"
 
-msgid "Delete read downloads"
-msgstr "Видалити файли прочитаних розділів"
-
 msgid "Delete saved filter"
 msgstr "Видалити збережений фільтр"
 
 msgid "Delete saved filter \"%1\"?"
 msgstr "Видалити збережений фільтр \"%1\"?"
+
+#, fuzzy
+msgid "Delete selected downloads"
+msgstr "Видалити файли прочитаних розділів"
 
 #, fuzzy
 msgid "Delete selected local downloads"
@@ -901,6 +913,18 @@ msgstr "Завантаження більше не перебуває у ста�
 msgid "Download is no longer queued."
 msgstr "Завантаження вже не в черзі."
 
+#, fuzzy
+msgid "Download management"
+msgstr "Завантажити наступні 5"
+
+#, fuzzy
+msgid "Download management: %1"
+msgstr "Завантажити наступні 10"
+
+#, fuzzy
+msgid "Download missing chapters (%1)"
+msgstr "Завантажені розділи збережено в %1."
+
 msgid "Download next %1 (up to 50 new)"
 msgstr "Завантажити наступні %1 (до 50 нових)"
 
@@ -972,12 +996,6 @@ msgstr "Завантаження вже не в черзі."
 
 msgid "Downloads"
 msgstr "Завантаження"
-
-msgid "Downloads · %1 failed"
-msgid_plural "Downloads · %1 failed"
-msgstr[0] "Завантаження · %1 помилка"
-msgstr[1] "Завантаження · %1 помилки"
-msgstr[2] "Завантаження · %1 помилок"
 
 msgid "Edit filters"
 msgstr "Редагувати фільтри"
@@ -1304,6 +1322,10 @@ msgstr ""
 "його після прийняття запиту; невдалі запити й автоматичні завантаження цього "
 "не роблять."
 
+#, fuzzy
+msgid "More download options"
+msgstr "Не скасовувати завантаження"
+
 msgid "Never ask"
 msgstr "Ніколи не питати"
 
@@ -1353,6 +1375,10 @@ msgstr "Розділи не вибрано."
 
 msgid "No description available."
 msgstr "Опис недоступний."
+
+#, fuzzy
+msgid "No downloaded chapters to delete."
+msgstr "Для цієї манґи не завантажено розділів."
 
 msgid "No downloads queued."
 msgstr "У черзі немає завантажень."
@@ -1518,6 +1544,10 @@ msgstr "Скасувати всі завантаження"
 msgid "Paused"
 msgstr ""
 
+#, fuzzy
+msgid "Paused queued downloads for this manga."
+msgstr "Скасувати всі завантаження"
+
 msgid "Pending read changes are not associated with the configured server."
 msgstr ""
 
@@ -1631,6 +1661,10 @@ msgstr "Скасувати всі завантаження"
 msgid "Resume downloads for this manga"
 msgstr "Скасувати всі завантаження"
 
+#, fuzzy
+msgid "Resumed downloads for this manga."
+msgstr "Скасувати всі завантаження"
+
 msgid "Retry"
 msgstr "Повторити"
 
@@ -1734,6 +1768,10 @@ msgid "Search: %1"
 msgstr "Пошук: %1"
 
 msgid "Select all"
+msgstr "Вибрати все"
+
+#, fuzzy
+msgid "Select all shown (%1)"
 msgstr "Вибрати все"
 
 #, fuzzy

@@ -81,23 +81,55 @@ function Methods:formatDownloadManagerFilterLabel(filter)
     return I18n.t(DOWNLOAD_FILTERS[filter or self:getDownloadManagerFilter() or "all"])
 end
 
+local function getPreparedDownloadState(display)
+    local status = display and display.status or {}
+    local state = status.state
+    return {
+        state = state,
+        downloaded = state == "downloaded" or state == "skipped",
+        active = state == "queued" or state == "downloading" or state == "running"
+            or state == "stopping" or state == "finalizing",
+        failed = state == "failed",
+    }
+end
+
 local function filterPreparedChapters(prepared, filter)
     if not filter or filter == "all" then return prepared end
     local filtered = {}
     for _, display in ipairs(prepared or {}) do
-        local status = display.status or {}
-        local state = status.state
-        local downloaded = state == "downloaded" or state == "skipped"
-        local active = state == "queued" or state == "downloading" or state == "running"
-            or state == "stopping" or state == "finalizing"
-        local failed = state == "failed"
-        local include = filter == "downloaded" and downloaded
-            or filter == "failed" and failed
-            or filter == "active" and active
-            or filter == "undownloaded" and not downloaded and not active and not failed
+        local state = getPreparedDownloadState(display)
+        local include = filter == "downloaded" and state.downloaded
+            or filter == "failed" and state.failed
+            or filter == "active" and state.active
+            or filter == "undownloaded" and not state.downloaded and not state.active and not state.failed
         if include then filtered[#filtered + 1] = display end
     end
     return filtered
+end
+
+local function buildDownloadManagerView(prepared, filter)
+    local filtered = filterPreparedChapters(prepared, filter)
+    local counts = { all = #(prepared or {}), undownloaded = 0, downloaded = 0, failed = 0, active = 0 }
+    local chapters = {}
+    for _index, display in ipairs(prepared or {}) do
+        local state = getPreparedDownloadState(display)
+        if state.downloaded then counts.downloaded = counts.downloaded + 1
+        elseif state.active then counts.active = counts.active + 1
+        elseif state.failed then counts.failed = counts.failed + 1
+        else counts.undownloaded = counts.undownloaded + 1 end
+    end
+    for _index, display in ipairs(filtered or {}) do
+        chapters[#chapters + 1] = display.chapter
+    end
+    return filtered, counts, chapters
+end
+
+function Methods:formatDownloadManagementTitle(manga)
+    if not self:getDownloadManagerFilter() then return nil end
+    local base = self.formatChapterListScreenTitle and self.formatChapterListScreenTitle(manga)
+        or self.formatChapterListTitle and self.formatChapterListTitle(manga)
+        or I18n.t("Chapters")
+    return I18n.f("Download management: %1", base)
 end
 
 local function reportExpiredChapterAction(owner)
@@ -150,11 +182,12 @@ function Methods:getChapterTitleBarMenuOptions(manga, lookup)
     end
     local context = self.current_chapter_context
     local manga_id = manga and tostring(manga.id or manga.title)
+    local title = self:formatDownloadManagementTitle(manga) or self:formatChapterListTitle(manga)
+    if self:getDownloadManagerFilter() then
+        title = title .. " · " .. self:formatDownloadManagerFilterLabel()
+    end
     return self:getTitleBarMenuOptions({
-        title = self:formatChapterListTitle(manga)
-            .. (self:getDownloadManagerFilter()
-                and " - " .. self:formatDownloadManagerFilterLabel()
-                or ""),
+        title = title,
         actions = self:getBulkChapterActions(lookup),
         vertical = true,
         destructive_actions_at_bottom = true,
@@ -330,12 +363,20 @@ function Methods:buildChapterMenuOptions(manga, chapters, ledger, options)
     local prepared, err = self:prepareChapterMenuItems(manga, visible_chapters, ledger, options, lookup, read_ledger)
     if not prepared then return nil, err end
     local filter = options and options.download_manager_filter or self:getDownloadManagerFilter()
-    prepared = filterPreparedChapters(prepared, filter)
+    local title = self.formatChapterListScreenTitle and self.formatChapterListScreenTitle(manga) or I18n.t("Chapters")
+    if filter then
+        prepared, self.download_manager_counts, self.download_manager_chapters = buildDownloadManagerView(prepared, filter)
+        title = self:formatDownloadManagementTitle(manga) .. " · " .. self:formatDownloadManagerFilterLabel(filter)
+    else
+        self.download_manager_counts, self.download_manager_chapters = nil, nil
+    end
 
-    return copyTitleBarOptions({
+    local menu_options = copyTitleBarOptions({
         title = self.formatChapterListScreenTitle and self:formatChapterListScreenTitle(manga) or I18n.t("Chapters"),
         chapters = self:buildChapterMenuItems(manga, prepared),
     }, self:getChapterTitleBarMenuOptions(manga, lookup))
+    menu_options.title = title
+    return menu_options
 end
 
 
@@ -486,8 +527,95 @@ function Methods:getChapterActions(manga, chapter)
     return actions
 end
 
+function Methods:getDownloadManagerActions()
+    local actions = {}
+    local context = self.current_chapter_context
+    local manga = context and context.manga
+    local counts = self.download_manager_counts or {}
+    local function filterText(filter)
+        local label = self:formatDownloadManagerFilterLabel(filter)
+        local count = tonumber(counts[filter])
+        return count and I18n.f("%1 (%2)", label, count) or label
+    end
+    table.insert(actions, {
+        id = "download_filter",
+        text = I18n.f("Filter: %1", filterText(self:getDownloadManagerFilter() or "all")),
+        submenu = true,
+    })
+
+    local selected_count = self:getSelectedChapterCount()
+    if selected_count > 0 then
+        table.insert(actions, {
+            id = "download_selected",
+            text = selected_count > (self.max_batch_queue_chapters or 50)
+                and I18n.t("Download selected (up to 50 new)")
+                or I18n.t("Download selected"),
+        })
+        table.insert(actions, { id = "mark_read_selected", text = I18n.t("Mark read") })
+        table.insert(actions, { id = "mark_unread_selected", text = I18n.t("Mark unread") })
+        table.insert(actions, { id = "clear_selection", text = I18n.t("Clear selection") })
+        table.insert(actions, { id = "select_range", text = I18n.t("Add chapter range") })
+        if hasCancelableDownloads(self, manga) then
+            table.insert(actions, {
+                id = "cancel_manga_downloads", text = I18n.t("Cancel all tasks for this manga"), destructive = true,
+            })
+        end
+        table.insert(actions, { id = "delete_selected", text = I18n.t("Delete selected downloads"), destructive = true })
+        return actions
+    end
+
+    if context and #(context.chapters or {}) > 0 then
+        table.insert(actions, {
+            id = "select_all",
+            text = I18n.f("Select all shown (%1)", #(self.download_manager_chapters or {})),
+        })
+        table.insert(actions, { id = "select_chapters", text = I18n.t("Select chapters") })
+        table.insert(actions, { id = "select_range", text = I18n.t("Add chapter range") })
+    end
+    if counts.undownloaded and counts.undownloaded > 0 then
+        table.insert(actions, {
+            id = "download_all_missing",
+            text = I18n.f("Download missing chapters (%1)", counts.undownloaded),
+        })
+    end
+
+    local queue = self.getDownloadQueue and self:getDownloadQueue()
+    local paused = queue and queue.isMangaPaused and queue:isMangaPaused(manga)
+    table.insert(actions, {
+        id = "toggle_manga_pause",
+        text = paused and I18n.t("Resume downloads for this manga") or I18n.t("Pause downloads for this manga"),
+    })
+    if counts.downloaded and counts.downloaded > 0 then
+        table.insert(actions, {
+            id = "delete_all_downloaded",
+            text = I18n.f("Delete downloaded chapters (%1)", counts.downloaded),
+            destructive = true,
+        })
+    end
+    if hasCancelableDownloads(self, manga) then
+        table.insert(actions, {
+            id = "cancel_manga_downloads", text = I18n.t("Cancel all tasks for this manga"), destructive = true,
+        })
+    end
+
+    table.insert(actions, { id = "keep_downloaded", text = I18n.t("Auto-download"), submenu = true })
+    table.insert(actions, { id = "bulk_downloads", text = I18n.t("More download options"), submenu = true })
+    local show_scanlator_filter = self.current_scanlator_filter ~= nil
+        or #(self:getChapterScanlatorChoices(context and context.chapters or {})) > 0
+    if show_scanlator_filter then
+        table.insert(actions, { id = "scanlator_filter", text = I18n.t("Scanlator filter"), submenu = true })
+    end
+    if manga and manga.id and not manga.local_only then
+        table.insert(actions, { id = "refresh_chapters", text = I18n.t("Refresh chapters") })
+    end
+    return actions
+end
+
 
 function Methods:getBulkChapterActions(lookup)
+    if self:getDownloadManagerFilter() then
+        return self:getDownloadManagerActions()
+    end
     local actions = {}
     local context = self.current_chapter_context
     local local_only = context and context.manga and context.manga.local_only
@@ -496,13 +624,6 @@ function Methods:getBulkChapterActions(lookup)
     end
     local show_scanlator_filter = self.current_scanlator_filter ~= nil
         or #(self:getChapterScanlatorChoices((self.current_chapter_context and self.current_chapter_context.chapters) or {})) > 0
-    if self:getDownloadManagerFilter() then
-        table.insert(actions, {
-            id = "download_filter",
-            text = I18n.f("Filter: %1", self:formatDownloadManagerFilterLabel()),
-            submenu = true,
-        })
-    end
     if local_only then
         table.insert(actions, self:getSelectedChapterCount() > 0
             and { id = "clear_selection", text = I18n.t("Clear selection") }
@@ -628,10 +749,13 @@ function Methods:showDownloadManagerFilterActions(menu_context)
     if not SuwayomiUI.showChapterActionsMenu then return false end
     local actions = {}
     local selected = self:getDownloadManagerFilter() or "all"
+    local counts = self.download_manager_counts or {}
     for _, filter in ipairs({ "undownloaded", "downloaded", "failed", "active", "all" }) do
+        local label = self:formatDownloadManagerFilterLabel(filter)
+        if tonumber(counts[filter]) then label = I18n.f("%1 (%2)", label, counts[filter]) end
         actions[#actions + 1] = {
             id = filter,
-            text = (filter == selected and "● " or "") .. self:formatDownloadManagerFilterLabel(filter),
+            text = (filter == selected and "● " or "") .. label,
         }
     end
     SuwayomiUI.showChapterActionsMenu({

@@ -701,6 +701,67 @@ function Methods:getReadDownloadedChaptersFromCurrentContext()
     return chapters
 end
 
+function Methods:getDownloadedChaptersFromCurrentContext()
+    local manga = self.current_chapter_context and self.current_chapter_context.manga
+    local lookup = manga and self:buildChapterDownloadLookup(manga)
+    local chapters = {}
+    for _index, chapter in ipairs(self:getVisibleChapters(
+        self.current_chapter_context and self.current_chapter_context.chapters or {}
+    )) do
+        local downloaded = self:isChapterDownloaded(manga, chapter, lookup)
+        if downloaded then table.insert(chapters, chapter) end
+    end
+    return chapters
+end
+
+function Methods:deleteAllDownloadedChaptersFromDevice()
+    if not self.current_chapter_context then return 0 end
+    local manga = self.current_chapter_context.manga
+    local chapters = self:getDownloadedChaptersFromCurrentContext()
+    if #chapters == 0 then
+        self:showMessage(I18n.t("No downloaded chapters to delete."))
+        return 0
+    end
+    local deleted, active, failed = 0, 0, 0
+    self:withChapterMenuRefreshSuppressed(function()
+        for _index, chapter in ipairs(chapters) do
+            local ok, state = self:deleteChapterFromDeviceWithOptions(manga, chapter, {
+                quiet_active = true,
+                quiet_missing = true,
+                quiet_delete_failed = true,
+                skip_refresh = true,
+            })
+            if ok then
+                deleted = deleted + 1
+            elseif state == "downloading" then
+                active = active + 1
+            elseif state ~= "queued" then
+                failed = failed + 1
+            end
+        end
+    end)
+    self:refreshChapterMenu()
+    reportDeletionProblems(self, active, failed)
+    return deleted
+end
+
+function Methods:confirmDeleteAllDownloadedChapters()
+    local chapters = self:getDownloadedChaptersFromCurrentContext()
+    if #chapters == 0 then
+        self:showMessage(I18n.t("No downloaded chapters to delete."))
+        return 0
+    end
+    return self:showBulkActionConfirmation(
+        I18n.count(
+            #chapters,
+            "Delete %1 downloaded chapter from this manga?",
+            "Delete %1 downloaded chapters from this manga?"
+        ),
+        I18n.t("Delete"),
+        function() self:deleteAllDownloadedChaptersFromDevice() end
+    )
+end
+
 
 
 function Methods:markSelectedChaptersUnread()
@@ -724,7 +785,8 @@ function Methods:performBulkChapterAction(action_id, menu_context)
     local manga = context and context.manga
     if manga and action_id ~= "select_all" and action_id ~= "select_chapters" and action_id ~= "select_range"
         and action_id ~= "clear_selection" and action_id ~= "scanlator_filter"
-        and action_id ~= "download_filter" then
+        and action_id ~= "download_filter" and action_id ~= "toggle_manga_pause"
+        and action_id ~= "download_all_missing" then
         local recovered_refresh = action_id == "refresh_chapters" and not manga.local_only and manga.id
             and ((context.missing and not manga.endpoint_scope)
                 or (manga.endpoint_scope and manga.endpoint_scope
@@ -733,10 +795,12 @@ function Methods:performBulkChapterAction(action_id, menu_context)
             self:showMessage(I18n.t("This action requires a chapter list associated with the current server."))
             return false
         end
-        if action_id == "delete_selected" or action_id == "delete_read_downloaded" then
+        if action_id == "delete_selected" or action_id == "delete_read_downloaded"
+            or action_id == "delete_all_downloaded" then
             local lookup = self:buildChapterDownloadLookup(manga)
             local targets = action_id == "delete_selected" and self:getSelectedChapters(manga, context.chapters)
-                or self:getReadDownloadedChaptersFromCurrentContext()
+                or action_id == "delete_read_downloaded" and self:getReadDownloadedChaptersFromCurrentContext()
+                or self:getDownloadedChaptersFromCurrentContext()
             for _, chapter in ipairs(targets) do
                 if not self:canMutateChapterArchive(manga, chapter, lookup) then
                     self:showMessage(I18n.t("Cannot delete these downloads: a chapter lacks a verified server association."))
@@ -759,6 +823,27 @@ function Methods:performBulkChapterAction(action_id, menu_context)
     end
     if action_id == "download_filter" then
         self:showDownloadManagerFilterActions(menu_context)
+        return true
+    end
+    if action_id == "download_all_missing" then
+        self:confirmDownloadAllChaptersForManga(manga)
+        return true
+    end
+    if action_id == "toggle_manga_pause" then
+        local queue = self:getDownloadQueue()
+        local paused = queue:isMangaPaused(manga)
+        local ok, err = queue:setMangaPaused(manga, not paused)
+        if not ok then
+            self:showMessage(I18n.f("Could not update manga download state: %1", err or "unknown"))
+            return false
+        end
+        self:showMessage(paused and I18n.t("Resumed downloads for this manga.")
+            or I18n.t("Paused queued downloads for this manga."))
+        self:refreshChapterMenu()
+        return true
+    end
+    if action_id == "delete_all_downloaded" then
+        self:confirmDeleteAllDownloadedChapters()
         return true
     end
     if MangaActionMenu.isSharedAction(action_id) and self.current_chapter_context and self.performMangaAction then

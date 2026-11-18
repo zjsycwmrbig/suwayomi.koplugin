@@ -430,7 +430,9 @@ describe("process-owned download navigation", function()
             assert.are.equal("partial pages", read(directory .. "/c1.cbz.part"))
             assert.is_not_nil(read(active.progress_path))
             assert.are.equal(committed, read(settings.store.path))
-            assert.are.equal("Downloads", plugin:showQuickActions().actions[3].text)
+            for _, action in ipairs(plugin:showQuickActions().actions) do
+                assert.are_not.equal("downloads", action.id)
+            end
             plugin:setCurrentMangaChapterContext(manga, chapters)
             plugin.current_chapter_menu = {}
             plugin:trackSuwayomiScreen("chapters", plugin.current_chapter_menu)

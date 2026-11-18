@@ -26,6 +26,9 @@ msgstr "（第 %1 章）"
 msgid " (Suwayomi id %1)"
 msgstr "（Suwayomi ID %1）"
 
+msgid "%1 (%2)"
+msgstr "%1（%2）"
+
 msgctxt "source filter sort summary"
 msgid "%1 - Ascending"
 msgstr "%1 - 升序"
@@ -247,9 +250,6 @@ msgstr ""
 
 msgid "Auto-download: %1"
 msgstr "自动下载：%1"
-
-msgid "Auto-download: Off"
-msgstr "自动下载：关闭"
 
 msgid "Automatic"
 msgstr "自动"
@@ -654,6 +654,10 @@ msgid ""
 "state stay unchanged."
 msgstr "要删除此漫画的 %1 个已下载章节文件吗？服务器章节和阅读状态不会改变。"
 
+msgid "Delete %1 downloaded chapter from this manga?"
+msgid_plural "Delete %1 downloaded chapters from this manga?"
+msgstr[0] "删除此漫画的 %1 个已下载章节？"
+
 msgid ""
 "Delete %1 local chapter files and their KOReader sidecars? This cannot be "
 "undone. Server files and read flags are unchanged. %2 files are blocked."
@@ -684,6 +688,9 @@ msgstr "清理全部已读下载"
 msgid "Delete chapter settings are unavailable."
 msgstr "章节删除设置不可用。"
 
+msgid "Delete downloaded chapters (%1)"
+msgstr "删除已下载章节（%1）"
+
 msgid "Delete downloaded chapters for this manga"
 msgstr "删除此漫画的已下载章节"
 
@@ -699,14 +706,14 @@ msgstr "删除文件"
 msgid "Delete from device"
 msgstr "从设备删除"
 
-msgid "Delete read downloads"
-msgstr "删除已读章节文件"
-
 msgid "Delete saved filter"
 msgstr "删除已保存的筛选器"
 
 msgid "Delete saved filter \"%1\"?"
 msgstr "要删除已保存的筛选器“%1”吗？"
+
+msgid "Delete selected downloads"
+msgstr "删除选中的下载"
 
 msgid "Delete selected local downloads"
 msgstr "删除选中的本地下载"
@@ -784,6 +791,15 @@ msgstr "下载已不再处于失败状态。"
 msgid "Download is no longer queued."
 msgstr "下载不再排队中。"
 
+msgid "Download management"
+msgstr "下载管理"
+
+msgid "Download management: %1"
+msgstr "下载管理：%1"
+
+msgid "Download missing chapters (%1)"
+msgstr "下载未下载章节（%1）"
+
 msgid "Download next %1 (up to 50 new)"
 msgstr "下载接下来 %1 章（最多新增 50 章）"
 
@@ -852,10 +868,6 @@ msgstr "正在下载或排队"
 
 msgid "Downloads"
 msgstr "下载"
-
-msgid "Downloads · %1 failed"
-msgid_plural "Downloads · %1 failed"
-msgstr[0] "下载 · %1 项失败"
 
 msgid "Edit filters"
 msgstr "编辑筛选器"
@@ -1178,6 +1190,9 @@ msgstr ""
 "据和备份。将章节标为未读会取消待执行的删除。新的“下载”或“重试”操作在请求被接"
 "受后也会取消删除；失败的请求和自动下载不会取消删除。"
 
+msgid "More download options"
+msgstr "更多下载选项"
+
 msgid "Never ask"
 msgstr "从不询问"
 
@@ -1220,6 +1235,9 @@ msgstr "未选择章节。"
 
 msgid "No description available."
 msgstr "无可用描述。"
+
+msgid "No downloaded chapters to delete."
+msgstr "没有可删除的已下载章节。"
 
 msgid "No downloads queued."
 msgstr "没有排队中的下载。"
@@ -1370,6 +1388,9 @@ msgstr "暂停此漫画的下载"
 msgid "Paused"
 msgstr "已暂停"
 
+msgid "Paused queued downloads for this manga."
+msgstr "已暂停此漫画的排队下载。"
+
 msgid "Pending read changes are not associated with the configured server."
 msgstr "待同步的阅读状态未关联到当前配置的服务器。"
 
@@ -1469,6 +1490,9 @@ msgstr "继续全部下载"
 msgid "Resume downloads for this manga"
 msgstr "继续此漫画的下载"
 
+msgid "Resumed downloads for this manga."
+msgstr "已继续此漫画的下载。"
+
 msgid "Retry"
 msgstr "重试"
 
@@ -1567,6 +1591,9 @@ msgstr "搜索：%1"
 
 msgid "Select all"
 msgstr "全选"
+
+msgid "Select all shown (%1)"
+msgstr "全选当前显示（%1）"
 
 msgid "Select chapters"
 msgstr "选择章节"

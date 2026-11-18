@@ -101,8 +101,7 @@ describe("scoped pending chapter choices", function()
         f.existing["/downloads/old.cbz"] = false
         f.chapters[1].is_read = true
         publish(true)
-        f.plugin:showBulkChapterActions()
-        f:choose("bulk_downloads")
+        f.plugin:showBulkDownloadActions()
         f:choose("download_next_5_unread")
         assert.is_table(f.queue:findPersistentJob("1:1"))
         assert.same({}, f.writes)

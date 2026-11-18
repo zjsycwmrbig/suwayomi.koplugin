@@ -516,6 +516,8 @@ function Methods:showChapterResultForManga(manga, result, options)
             if is_current_menu then
                 self.current_chapter_menu = nil
                 self.download_manager_filter = nil
+                self.download_manager_chapters = nil
+                self.download_manager_counts = nil
                 self:cancelMangaNetworkRequests()
             end
             if is_current_menu
@@ -572,7 +574,7 @@ function Methods:showChaptersForManga(manga, options)
 end
 
 function Methods:showDownloadChaptersForManga(manga, filter)
-    filter = normalizeDownloadManagerFilter(filter) or "undownloaded"
+    filter = normalizeDownloadManagerFilter(filter) or "all"
     self.download_manager_filter = filter
     return self:showChaptersForManga(manga, { download_manager_filter = filter })
 end
@@ -611,6 +613,7 @@ end
 
 function Methods:getMangaInformationActions(manga)
     local actions = {
+        { id = "download_management", text = I18n.t("Download management") },
         { id = "open_chapters", text = I18n.t("Open chapters") },
     }
     if MangaActionMenu.canOpenFirstUnread(self, manga) then
@@ -795,6 +798,9 @@ function Methods:performMangaAction(manga, action_id, options)
     if action_id == "open_chapters" then
         self:showChaptersForManga(manga)
         return true
+    end
+    if action_id == "download_management" then
+        return self:showDownloadChaptersForManga(manga, "all")
     end
     if action_id == "manga_information" then
         if SuwayomiUI.showMangaInformation then

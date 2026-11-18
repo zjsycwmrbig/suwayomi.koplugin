@@ -91,18 +91,17 @@ describe("suwayomi/plugin/home", function()
             getNavigation = function() return { closeAll = function() events[#events + 1] = "close" end } end,
             cancelSourceFetchWorker = function() events[#events + 1] = "cancel" end,
             showLibrary = function() events[#events + 1] = "library"; return "library body" end,
-            showDownloads = function() events[#events + 1] = "downloads"; return "downloads body" end,
         }, { __index = methods })
         assert.are.equal("library body", plugin:showHome())
         local navigation = plugin:getBottomNavigation("library")
-        assert.are.equal(4, #navigation.tabs)
+        assert.are.equal(3, #navigation.tabs)
         assert.are.equal("book.opened", navigation.tabs[1].icon)
-        assert.are.equal("appbar.settings", navigation.tabs[4].icon)
-        assert.are.equal("downloads body", navigation.on_select("downloads"))
-        assert.are.equal("downloads", plugin.current_main_tab)
-        assert.are.same({ "cancel", "close", "library", "cancel", "close", "downloads" }, events)
+        assert.are.equal("appbar.settings", navigation.tabs[3].icon)
+        assert.is_nil(navigation.on_select("downloads"))
+        assert.are.equal("library", plugin.current_main_tab)
+        assert.are.same({ "cancel", "close", "library" }, events)
         assert.is_nil(plugin:showMainTab("invalid"))
-        assert.are.equal(6, #events)
+        assert.are.equal(3, #events)
     end)
 
     it("keeps a Browse shell visible while source loading runs", function()
@@ -129,49 +128,21 @@ describe("suwayomi/plugin/home", function()
         assert.is_nil(package.loaded["suwayomi/i18n"])
     end)
 
-    it("preserves the actual failure count when a locale uses singular for 21", function()
+    it("does not expose a standalone Downloads action", function()
         helper.stubControllerDependencies()
-        package.preload.gettext = function()
-            return setmetatable({
-                ngettext = function(singular, plural, count)
-                    if count % 10 == 1 and count % 100 ~= 11 then
-                        return "singular:" .. singular
-                    end
-                    return "plural:" .. plural
-                end,
-            }, {
-                __call = function(_, text)
-                    return "tx:" .. text
-                end,
-            })
-        end
-        package.loaded.gettext = nil
-        package.preload["suwayomi/i18n"] = nil
-        package.loaded["suwayomi/i18n"] = nil
         package.loaded["suwayomi/plugin/home"] = nil
         local controller = require("suwayomi/plugin/home")
-        local failed_count = 0
-        local queue = {
-            getFailedCount = function()
-                return failed_count
-            end,
-        }
-        local plugin = {
-            getDownloadQueue = function()
-                return queue
-            end,
-        }
+        local plugin = {}
         for name, method in pairs(controller.methods) do
             plugin[name] = method
         end
 
-        assert.are.equal("tx:Downloads", plugin:buildHomeActions()[3].text)
-        failed_count = 1
-        assert.are.equal("singular:Downloads · 1 failed", plugin:buildHomeActions()[3].text)
-        failed_count = 3
-        assert.are.equal("plural:Downloads · 3 failed", plugin:buildHomeActions()[3].text)
-        failed_count = 21
-        assert.are.equal("singular:Downloads · 21 failed", plugin:buildHomeActions()[3].text)
+        local ids = {}
+        for _, action in ipairs(plugin:buildHomeActions()) do ids[action.id] = true end
+        assert.is_nil(ids.downloads)
+        assert.is_true(ids.library)
+        assert.is_true(ids.browse)
+        assert.is_true(ids.settings)
     end)
 
     describe("message sizing", function()

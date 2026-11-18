@@ -26,6 +26,9 @@ msgstr ""
 msgid " (Suwayomi id %1)"
 msgstr ""
 
+msgid "%1 (%2)"
+msgstr ""
+
 msgctxt "source filter sort summary"
 msgid "%1 - Ascending"
 msgstr ""
@@ -248,9 +251,6 @@ msgstr ""
 "Acciones al finalizar un documento > Marcar siempre como leído."
 
 msgid "Auto-download: %1"
-msgstr ""
-
-msgid "Auto-download: Off"
 msgstr ""
 
 msgid "Automatic"
@@ -649,6 +649,11 @@ msgid ""
 "state stay unchanged."
 msgstr ""
 
+msgid "Delete %1 downloaded chapter from this manga?"
+msgid_plural "Delete %1 downloaded chapters from this manga?"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid ""
 "Delete %1 local chapter files and their KOReader sidecars? This cannot be "
 "undone. Server files and read flags are unchanged. %2 files are blocked."
@@ -679,6 +684,9 @@ msgstr ""
 msgid "Delete chapter settings are unavailable."
 msgstr ""
 
+msgid "Delete downloaded chapters (%1)"
+msgstr ""
+
 msgid "Delete downloaded chapters for this manga"
 msgstr ""
 
@@ -694,13 +702,13 @@ msgstr ""
 msgid "Delete from device"
 msgstr ""
 
-msgid "Delete read downloads"
-msgstr ""
-
 msgid "Delete saved filter"
 msgstr ""
 
 msgid "Delete saved filter \"%1\"?"
+msgstr ""
+
+msgid "Delete selected downloads"
 msgstr ""
 
 msgid "Delete selected local downloads"
@@ -779,6 +787,15 @@ msgstr ""
 msgid "Download is no longer queued."
 msgstr ""
 
+msgid "Download management"
+msgstr ""
+
+msgid "Download management: %1"
+msgstr ""
+
+msgid "Download missing chapters (%1)"
+msgstr ""
+
 msgid "Download next %1 (up to 50 new)"
 msgstr ""
 
@@ -842,11 +859,6 @@ msgstr ""
 
 msgid "Downloads"
 msgstr ""
-
-msgid "Downloads · %1 failed"
-msgid_plural "Downloads · %1 failed"
-msgstr[0] ""
-msgstr[1] ""
 
 msgid "Edit filters"
 msgstr ""
@@ -1153,6 +1165,9 @@ msgid ""
 "cancels it once accepted; failed requests and automatic downloads do not."
 msgstr ""
 
+msgid "More download options"
+msgstr ""
+
 msgid "Never ask"
 msgstr ""
 
@@ -1194,6 +1209,9 @@ msgid "No chapters selected."
 msgstr ""
 
 msgid "No description available."
+msgstr ""
+
+msgid "No downloaded chapters to delete."
 msgstr ""
 
 msgid "No downloads queued."
@@ -1344,6 +1362,9 @@ msgstr ""
 msgid "Paused"
 msgstr ""
 
+msgid "Paused queued downloads for this manga."
+msgstr ""
+
 msgid "Pending read changes are not associated with the configured server."
 msgstr ""
 
@@ -1445,6 +1466,9 @@ msgstr ""
 msgid "Resume downloads for this manga"
 msgstr ""
 
+msgid "Resumed downloads for this manga."
+msgstr ""
+
 msgid "Retry"
 msgstr ""
 
@@ -1542,6 +1566,9 @@ msgid "Search: %1"
 msgstr ""
 
 msgid "Select all"
+msgstr ""
+
+msgid "Select all shown (%1)"
 msgstr ""
 
 msgid "Select chapters"

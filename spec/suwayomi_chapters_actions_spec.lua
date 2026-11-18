@@ -1680,4 +1680,49 @@ describe("suwayomi/chapters/actions", function()
         assert.are.same({ { quick = true } }, plugin.refreshes)
     end)
 
+    it("toggles a per-manga download pause from download management", function()
+        local calls = {}
+        local queue = {
+            isMangaPaused = function(_, target)
+                calls[#calls + 1] = { "read", target.id }
+                return false
+            end,
+            setMangaPaused = function(_, target, paused)
+                calls[#calls + 1] = { "write", target.id, paused }
+                return true
+            end,
+        }
+        local plugin = build_plugin({
+            queue = queue,
+            current_chapter_context = { manga = manga, chapters = { chapter } },
+        })
+
+        assert.is_true(plugin:performBulkChapterAction("toggle_manga_pause"))
+        assert.are.same({ { "read", "m1" }, { "write", "m1", true } }, calls)
+        assert.are.same({ true }, plugin.refreshes)
+    end)
+
+    it("targets only this manga's downloaded chapters for removal", function()
+        local plugin = build_plugin({
+            current_chapter_context = {
+                manga = manga,
+                chapters = {
+                    { id = "c1", name = "Downloaded" },
+                    { id = "c2", name = "Missing" },
+                },
+            },
+        })
+        plugin.isChapterDownloaded = function(_, _, target)
+            return target.id == "c1"
+        end
+        plugin.showBulkActionConfirmation = function(self, text, ok_text, callback)
+            self.confirmation = { text = text, ok_text = ok_text, callback = callback }
+            return true
+        end
+
+        assert.is_true(plugin:confirmDeleteAllDownloadedChapters())
+        assert.are.equal("Delete 1 downloaded chapter from this manga?", plugin.confirmation.text)
+        assert.are.equal("Delete", plugin.confirmation.ok_text)
+    end)
+
 end)

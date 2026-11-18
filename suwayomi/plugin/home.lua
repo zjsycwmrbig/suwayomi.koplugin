@@ -24,18 +24,6 @@ end
 
 local Methods = {}
 
-local function downloadFailureCount(self)
-    local queue = self.getDownloadQueue and self:getDownloadQueue()
-    return queue and queue.getFailedCount and queue:getFailedCount() or 0
-end
-
-local function downloadsActionText(failed_count)
-    if failed_count > 0 then
-        return I18n.count(failed_count, "Downloads · %1 failed", "Downloads · %1 failed")
-    end
-    return I18n.t("Downloads")
-end
-
 local function ensureReaderReturnMenuOrder()
     local ok, reader_menu_order = pcall(require, "ui/elements/reader_menu_order")
     local main_order = ok and reader_menu_order and reader_menu_order.main or nil
@@ -68,8 +56,7 @@ function Methods:showTopLevelScreen(route_id, callback)
 end
 
 
-function Methods:buildHomeActions(failed_count)
-    failed_count = failed_count or downloadFailureCount(self)
+function Methods:buildHomeActions()
     return {
         {
             id = "library",
@@ -86,15 +73,6 @@ function Methods:buildHomeActions(failed_count)
             callback = function()
                 return self:showTopLevelScreen("browse", function()
                     return self:browseSuwayomi()
-                end)
-            end,
-        },
-        {
-            id = "downloads",
-            text = downloadsActionText(failed_count),
-            callback = function()
-                return self:showTopLevelScreen("downloads", function()
-                    return self:showDownloads()
                 end)
             end,
         },
@@ -134,7 +112,6 @@ function Methods:getBottomNavigation(active)
         tabs = {
             { id = "library", text = I18n.t("Library"), icon = "book.opened" },
             { id = "browse", text = I18n.t("Browse"), icon = "appbar.search" },
-            { id = "downloads", text = I18n.t("Downloads"), icon = "move.down" },
             { id = "settings", text = I18n.t("Settings"), icon = "appbar.settings" },
         },
         on_select = function(tab) return self:showMainTab(tab) end,
@@ -142,7 +119,7 @@ function Methods:getBottomNavigation(active)
 end
 
 function Methods:showMainTab(tab)
-    if tab ~= "library" and tab ~= "browse" and tab ~= "downloads" and tab ~= "settings" then
+    if tab ~= "library" and tab ~= "browse" and tab ~= "settings" then
         return nil
     end
     -- Closing screens retires their requests; the process-owned download queue continues.
@@ -150,7 +127,6 @@ function Methods:showMainTab(tab)
     self:getNavigation():closeAll()
     self.current_main_tab = tab
     if tab == "library" then return self:showLibrary() end
-    if tab == "downloads" then return self:showDownloads() end
     if tab == "settings" then
         return self:showTopLevelScreen("settings", function() return self:showSettings() end)
     end
@@ -164,16 +140,14 @@ function Methods:showHome()
     return self:showMainTab("library")
 end
 
--- Retain the compact actions dialog for callers that need queue status/actions.
+-- Retain the compact actions dialog for native Search entry.
 function Methods:showQuickActions()
-    local failed_count = downloadFailureCount(self)
     local dialog
     dialog = SuwayomiUI.showHomeDialog({
-        actions = self:buildHomeActions(failed_count),
+        actions = self:buildHomeActions(),
         onClose = function()
             if self.current_home_dialog == dialog then
                 self.current_home_dialog = nil
-                self.current_home_failed_count = nil
             end
             if self.suwayomi_navigation then self.suwayomi_navigation:pop(dialog) end
         end,
@@ -181,31 +155,13 @@ function Methods:showQuickActions()
         if action and action.callback then action.callback() end
     end)
     self.current_home_dialog = dialog
-    self.current_home_failed_count = failed_count
     if dialog and self.trackSuwayomiScreen then self:trackSuwayomiScreen("home", dialog) end
     return dialog
 end
 
 
 function Methods:refreshHomeDownloads()
-    local dialog = self.current_home_dialog
-    if not dialog or not SuwayomiUI.updateHomeDownloadsLabel then
-        return false
-    end
-    if self.isSuwayomiScreenActive and not self:isSuwayomiScreenActive(dialog) then
-        self.current_home_dialog = nil
-        self.current_home_failed_count = nil
-        return false
-    end
-    local failed_count = downloadFailureCount(self)
-    if failed_count == self.current_home_failed_count then
-        return false
-    end
-    if SuwayomiUI.updateHomeDownloadsLabel(dialog, downloadsActionText(failed_count)) == false then
-        return false
-    end
-    self.current_home_failed_count = failed_count
-    return true
+    return false
 end
 
 

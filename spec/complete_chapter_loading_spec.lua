@@ -1355,7 +1355,7 @@ describe("complete stored chapter loading", function()
                     return
                 end
                 if dataset ~= "labeled chapters" then
-                    select_action("bulk_downloads")
+                    plugin:showBulkDownloadActions()
                     select_action("download_next_5_unread")
                     assert.are.same({}, admittedIds())
                     assert.are.same({}, queue:getSnapshot().queued)
@@ -1380,7 +1380,7 @@ describe("complete stored chapter loading", function()
                 open_action_menu()
                 if dataset ~= "labeled chapters" then assert.is_nil(find_action("scanlator_filter"))
                 else assert.is_table(find_action("scanlator_filter")) end
-                select_action("bulk_downloads")
+                plugin:showBulkDownloadActions()
                 select_action("download_next_5_unread")
                 assert.are.same(expected_ids, admittedIds())
                 assert.are.same({}, json.decode(saved_ledger))

@@ -47,7 +47,6 @@ describe("main-screen bottom navigation", function()
         Navigation.attach(menu, { active = "library", tabs = {
             { id = "library", text = "库", icon = "book.opened" },
             { id = "browse", text = "浏览", icon = "appbar.search" },
-            { id = "downloads", text = "下载", icon = "move.down" },
             { id = "settings", text = "设置", icon = "appbar.settings" },
         }, on_select = function(tab) selected[#selected + 1] = tab end })
         assert.are.equal(body, menu[1][1])
@@ -62,7 +61,7 @@ describe("main-screen bottom navigation", function()
             button.callback()
         end
         assert.are.equal(1203, width)
-        assert.are.same({ "browse", "downloads", "settings" }, selected)
+        assert.are.same({ "browse", "settings" }, selected)
         assert.are.equal(menu._suwayomi_bottom_focus, menu.layout[1])
         assert.are.equal(4, buttons[1].frame.bordersize)
         assert.are.equal(0, buttons[2].frame.bordersize)

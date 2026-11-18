@@ -133,10 +133,9 @@ describe("suwayomi plugin", function()
 
         assert.are.equal("Library", runtime.shown_home_dialog.actions[1].text)
         assert.are.equal("Browse", runtime.shown_home_dialog.actions[2].text)
-        assert.are.equal("Downloads", runtime.shown_home_dialog.actions[3].text)
-        assert.are.equal("Sync", runtime.shown_home_dialog.actions[4].text)
-        assert.are.equal("Settings", runtime.shown_home_dialog.actions[5].text)
-        assert.are.equal("Close plugin", runtime.shown_home_dialog.actions[6].text)
+        assert.are.equal("Sync", runtime.shown_home_dialog.actions[3].text)
+        assert.are.equal("Settings", runtime.shown_home_dialog.actions[4].text)
+        assert.are.equal("Close plugin", runtime.shown_home_dialog.actions[5].text)
     end)
 
     it("keeps reader return without a separate Next chapter menu action", function()
@@ -317,51 +316,32 @@ describe("suwayomi plugin", function()
         assert.is_false(plugin:isSuwayomiScreenActive(second))
     end)
 
-    it("refreshes the visible home failure count only when terminal failures change", function()
+    it("keeps download status out of the home quick actions", function()
         local plugin = build_plugin({ refreshChapterMenu = function() end })
         local queue = plugin:getDownloadQueue()
-        local failed_count = 0
         function queue:getFailedCount()
-            return failed_count
+            return 2
         end
 
         local dialog = plugin:showQuickActions()
-        assert.are.equal("Downloads", dialog.actions[3].text)
-
-        failed_count = 2
-        plugin:onDownloadSnapshot(queue:getSnapshot())
-        assert.are.equal("Downloads · 2 failed", dialog.actions[3].text)
+        for _, action in ipairs(dialog.actions) do
+            assert.are_not.equal("downloads", action.id)
+        end
         assert.are.equal(dialog, runtime.shown_home_dialog)
         plugin:onDownloadSnapshot(queue:getSnapshot())
-        assert.are.equal(1, #runtime.home_downloads_labels)
-
-        failed_count = 1
-        plugin:withChapterMenuRefreshSuppressed(function()
-            plugin:onDownloadSnapshot(queue:getSnapshot())
-            assert.are.equal("Downloads · 2 failed", dialog.actions[3].text)
-        end)
-        assert.are.equal("Downloads · 1 failed", dialog.actions[3].text)
-
-        failed_count = 0
-        plugin:onDownloadSnapshot(queue:getSnapshot())
-        assert.are.equal("Downloads", dialog.actions[3].text)
-        assert.are.same({ "Downloads · 2 failed", "Downloads · 1 failed", "Downloads" }, runtime.home_downloads_labels)
+        assert.are.same({}, runtime.home_downloads_labels)
         assert.is_true(plugin:isSuwayomiScreenActive(dialog))
         assert.are.same({}, runtime.closed_widgets)
     end)
 
-    it("does not refresh closed home dialogs after download failures change", function()
+    it("does not retain a closed home dialog when download failures change", function()
         local plugin = build_plugin({ refreshChapterMenu = function() end })
         local queue = plugin:getDownloadQueue()
-        local failed_count = 1
         function queue:getFailedCount()
-            return failed_count
+            return 1
         end
         local dialog = plugin:showQuickActions()
-        assert.are.equal("Downloads · 1 failed", dialog.actions[3].text)
-
         dialog.onClose()
-        failed_count = 2
         plugin:onDownloadSnapshot(queue:getSnapshot())
 
         assert.are.same({}, runtime.home_downloads_labels)
@@ -369,9 +349,7 @@ describe("suwayomi plugin", function()
         assert.is_false(plugin:isSuwayomiScreenActive(dialog))
 
         local reopened = plugin:showQuickActions()
-        assert.are.equal("Downloads · 2 failed", reopened.actions[3].text)
         plugin:getNavigation():pop(reopened)
-        failed_count = 0
         plugin:onDownloadSnapshot(queue:getSnapshot())
         assert.are.same({}, runtime.home_downloads_labels)
         assert.is_nil(plugin.current_home_dialog)
@@ -532,7 +510,7 @@ describe("suwayomi plugin", function()
         })
 
         plugin:showQuickActions()
-        runtime.shown_home_dialog.actions[6].callback()
+        runtime.shown_home_dialog.actions[5].callback()
 
         assert.is_true(plugin.closed_plugin)
     end)
@@ -545,9 +523,9 @@ describe("suwayomi plugin", function()
         plugin:showQuickActions()
 
         assert.is_true(plugin:isSuwayomiScreenActive(runtime.shown_home_dialog))
-        assert.is_false(runtime.shown_home_dialog.actions[6].close_before_select)
+        assert.is_false(runtime.shown_home_dialog.actions[5].close_before_select)
 
-        runtime.shown_home_dialog.actions[6].callback()
+        runtime.shown_home_dialog.actions[5].callback()
 
         assert.are.same({ runtime.shown_home_dialog, library }, runtime.closed_widgets)
         assert.is_false(plugin:isSuwayomiScreenActive(runtime.shown_home_dialog))
@@ -565,7 +543,7 @@ describe("suwayomi plugin", function()
         plugin:trackSuwayomiScreen("saved-filters", saved_filters)
         plugin:showQuickActions()
 
-        runtime.shown_home_dialog.actions[6].callback()
+        runtime.shown_home_dialog.actions[5].callback()
 
         assert.are.same({ runtime.shown_home_dialog, saved_filters, filter_editor, sources }, runtime.closed_widgets)
         assert.is_false(plugin:isSuwayomiScreenActive(runtime.shown_home_dialog))
@@ -592,7 +570,7 @@ describe("suwayomi plugin", function()
         plugin:trackSuwayomiScreen("browse-results", browse_results)
         plugin:showQuickActions()
 
-        runtime.shown_home_dialog.actions[6].callback()
+        runtime.shown_home_dialog.actions[5].callback()
 
         assert.are.same({ runtime.shown_home_dialog, browse_results, filter_editor, sources }, runtime.closed_widgets)
         assert.are.equal(2, source_close_calls)
