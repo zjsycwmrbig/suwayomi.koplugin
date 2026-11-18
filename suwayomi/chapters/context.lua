@@ -358,7 +358,7 @@ function Methods:pruneChapterSelectionForCurrentContext()
             self.selected_chapters[key] = nil
         end
     end
-    self.selection_mode = self:getSelectedChapterCount() > 0
+    self.selection_mode = self.selection_mode or self:getSelectedChapterCount() > 0
 end
 
 
@@ -469,6 +469,14 @@ function Methods:selectAllChapters()
 end
 
 
+function Methods:startChapterSelection()
+    if not self.current_chapter_context or self.suwayomi_host_retired then return false end
+    self.selected_chapters = self.selected_chapters or {}
+    self.selection_mode = true
+    self:refreshChapterMenu({ quick = true })
+    return true
+end
+
 function Methods:toggleChapterSelection(manga, chapter)
     if not self:isChapterInCurrentContext(manga, chapter) then return false end
     self.selected_chapters = self.selected_chapters or {}
@@ -478,7 +486,7 @@ function Methods:toggleChapterSelection(manga, chapter)
     else
         self.selected_chapters[key] = true
     end
-    self.selection_mode = self:getSelectedChapterCount() > 0
+    self.selection_mode = true
     self:refreshChapterMenu()
 end
 

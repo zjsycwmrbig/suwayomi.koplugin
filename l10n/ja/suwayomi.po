@@ -1381,6 +1381,9 @@ msgstr ""
 msgid "Select all"
 msgstr ""
 
+msgid "Select chapters"
+msgstr ""
+
 msgid "Server URL"
 msgstr ""
 

@@ -108,6 +108,44 @@ describe("read sync endpoint authority", function()
     end)
 
     for _, read in ipairs({ true, false }) do
+        it("syncs explicit " .. tostring(read) .. " without adopting an unassociated local archive", function()
+            plugin.isChapterDownloaded = function() return true, "/books/recovered.cbz" end
+            plugin.canMutateChapterArchive = function() return false end
+            plugin.setKoreaderChapterReadState = function() error("must not touch unassociated sidecars") end
+            assert(settings:saveDeleteChaptersSettings({ delete_after_mark_read = true }))
+            local manga, chapter = { id = "1", endpoint_scope = scope }, { id = "2" }
+            local action = read and plugin.markChapterRead or plugin.markChapterUnread
+            local ok, result = action(plugin, manga, chapter)
+            assert.is_true(ok)
+            assert.is_true(result.committed)
+            assert.equals(read, ledger()["1:2"].read)
+            assert.is_nil(ledger()["1:2"].path)
+            assert.is_nil(ledger()["1:2"].archive_generation)
+            assert.same({}, plugin:getDownloadQueue().manual_deletion:snapshot())
+            assert.same({}, settings:loadReaderReturnContexts())
+            if read then assert.equals(1, result.blocked) end
+            assert.is_true(plugin:startPendingReadSyncWorker())
+            finish()
+            assert.same({ { endpoint = scope, ids = { "2" }, read = read } }, calls)
+            assert.is_nil(ledger()["1:2"] and ledger()["1:2"].pending_read_sync)
+            assert.is_false(plugin:canMutateChapterArchive(manga, chapter))
+        end)
+    end
+
+    it("rejects local-only, foreign and mismatched chapter identities", function()
+        for _, manga in ipairs({ { id = "1", endpoint_scope = foreign },
+            { id = "1", endpoint_scope = scope, local_only = true } }) do
+            assert.is_false(plugin:markChapterRead(manga, { id = "2" }))
+        end
+        assert.is_false(plugin:markChapterRead({ id = "1", endpoint_scope = scope }, { id = "2", local_only = true }))
+        local conflicting = entry(scope, false)
+        conflicting.chapter_id = "3"
+        save({ ["1:2"] = conflicting })
+        assert.is_false(plugin:markChapterRead({ id = "1", endpoint_scope = scope }, { id = "2" }))
+        assert.same(conflicting, ledger()["1:2"])
+    end)
+
+    for _, read in ipairs({ true, false }) do
         it("syncs same-server " .. tostring(read) .. " choices and preserves ineligible mixed entries", function()
             local eligible, unknown, other = entry(scope, read), entry(nil, read), entry(foreign, read)
             unknown.chapter_id, other.chapter_id = "3", "4"

@@ -15,6 +15,15 @@ Keep `markChapterRead`, `markChapterListRead`, `markSelectedChaptersRead`, and `
 
 ## Ordering
 
+### Fork amendment: separate explicit read intent from archive association
+
+Manual read/unread actions require current server/chapter identity and preserve
+unknown/foreign ledger collision checks. A file found without a recorded archive
+association does not prevent a server read choice. It remains unassociated:
+no sidecar write, archive adoption, or deletion/retention target is authorized.
+Optional deletion may fail independently after the read choice commits. Native
+completed-close synchronization continues to require local archive association.
+
 1. Capture archive targets before metadata changes or menu refresh can change the observed context. Build independent completion snapshots from those captured observations.
 2. Update read state in the operation's ledger. For selected batches, clear selection before rebuilding the menu. Reconcile visible non-target chapters during the batch refresh before committing the shared ledger.
 3. Commit read state, accepted manual-delete requests, and [refill enrollment](0004-durable-download-ahead-refill.md) through the checked shared store before archive removal. Busy download work prevents deletion acceptance without preventing mark-read or canceling that work.

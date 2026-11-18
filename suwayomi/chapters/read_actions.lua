@@ -1,5 +1,5 @@
 -- Boundary: ChapterReadActions.
--- Owns scoped manual read intent, ordering, captured completions, and immediate outcomes.
+-- Owns server-scoped manual read intent; local side effects require archive association.
 -- Ledger owns checked persistence; the process-owned manual deletion module removes archives.
 
 local SuwayomiDebug = require("suwayomi/debug")
@@ -144,9 +144,14 @@ local function markRead(self, manga, chapters, options, batch, clear_selection)
     local capture_deletion = delete_settings.delete_after_mark_read == true and not options.skip_delete_after_mark_read
     local root = SuwayomiSettings:loadDownloadDirectory()
     local captures, prepared = {}, {}
+    local unassociated_downloads = 0
     -- Capture every target before metadata or a menu rebuild can change the view.
     for _, chapter in ipairs(chapters) do
         local downloaded, path = self:isChapterDownloaded(manga, chapter)
+        if downloaded and self.canMutateChapterArchive and not self:canMutateChapterArchive(manga, chapter) then
+            if capture_deletion then unassociated_downloads = unassociated_downloads + 1 end
+            downloaded, path = false, nil
+        end
         local key = self:getChapterLedgerKey(manga, chapter)
         local capture = capture_deletion and core:capture(key, path, root) or nil
         if capture then captures[#captures + 1] = capture end
@@ -216,6 +221,7 @@ local function markRead(self, manga, chapters, options, batch, clear_selection)
         for key, entry in pairs(committed) do options.ledger[key] = entry end
     end
     local result = readResult(core, outcomes, #chapters)
+    result.blocked = result.blocked + unassociated_downloads
     showReadSummary(self, result, options)
     SuwayomiDebug.log({ operation = "manual_mark_read", event = "end", chapter_count = #chapters,
         removed_count = result.removed, pending_count = result.pending, busy_count = result.busy, blocked_count = result.blocked,
@@ -242,6 +248,9 @@ local function markUnread(self, manga, chapters, options, batch, clear_selection
     local keys = {}
     for _, chapter in ipairs(chapters) do
         local downloaded, path = self:isChapterDownloaded(manga, chapter)
+        if downloaded and self.canMutateChapterArchive and not self:canMutateChapterArchive(manga, chapter) then
+            downloaded, path = false, nil
+        end
         if downloaded and path then self:setKoreaderChapterReadState(path, false) end
         self:upsertChapterLedgerEntryInLedger(ledger, manga, chapter, {
             path = downloaded and path or nil,

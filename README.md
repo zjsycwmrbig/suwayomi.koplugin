@@ -62,6 +62,19 @@ Downloaded chapters open without waiting for the server. KOReader saves and resu
 
 ### Keep chapters ready
 
+For precise downloads, open the chapter title menu and choose **Select chapters**.
+Tap individual rows across pages to select or deselect them, then choose
+**Download selected** in the title menu. Long-pressing a chapter also starts
+selection. Deselecting the last row keeps selection mode active; **Clear selection**
+exits it. Selected downloads can include already-read chapters and skip chapters
+already downloaded or queued. Each action admits at most 50 new downloads.
+
+Manual read/unread changes use the chapter's server identity independently of
+local download registration. If an archive exists without a verified association,
+the read choice can synchronize, but the plugin does not adopt the archive, write
+its reading metadata, or delete it. Unknown or conflicting server identities
+remain blocked. Automatic completion still requires an associated local archive.
+
 Use **Download next** for a one-time batch or **Auto-download** to keep the first unread chapters available. Each action adds at most 50 new chapters. The checked Auto-download choice shows the saved limit; downloaded and queued chapters count toward it. This setting does not delete other downloads.
 
 Selecting a limit may offer **Always mark as finished**. This optional KOReader setting applies to **all KOReader documents** at their end-of-document action. **Keep disabled** leaves Auto-download active and manual read marking available. Choose **Keep disabled** with **Don't ask again** checked, or **Enable**, to stop future reminders.

@@ -94,6 +94,20 @@ When the blocked Next dialog belongs to another endpoint, its explicit Go to Suw
 
 ## Read state and chapter actions
 
+Explicit server read/unread intent is independent of local archive admission.
+It requires a current endpoint, manga/chapter IDs, non-local-only rows, and no
+unknown or conflicting committed/read-ledger identity. An existing unregistered
+archive alone cannot block that intent. Such intent stays pathless when no
+associated path is already recorded; it grants no archive association, sidecar
+write, finish-cleanup target, or deletion authority. Local side effects still
+require `canMutateChapterArchive`; automatic sidecar completion requires recorded
+read association. A blocked optional deletion is reported without undoing the read.
+
+The chapter title menu exposes Select chapters as well as Select all. Empty
+selection remains active until explicitly cleared or changing manga. Row taps
+toggle exact identities across pages; selected downloads reuse the existing
+bounded, context-checked batch admission and include read chapters.
+
 [ADR-0001](adr/0001-manual-mark-read-coordination.md) owns single, selected, previous, and unread action ordering. Chapter context owns filtering and selection; actions dispatch commands; read actions capture targets before menu or metadata changes. The ledger enrolls refill against the previous read state, then merges read choices and applies manual-intent admission/revocation in one checked save. Confirmed results return independent deletion targets without mutating the captures; deferred completion preserves the committed archive generation. Failed or uncertain saves return no targets and start no removal. Selected batches reconcile visible non-target entries before commit; singles publish before refresh. After a successful commit, captured completions publish in order, then manual processing and sync run. KOReader sidecar writes and remote sync are outside that transaction.
 
 Pending local read choices take precedence over remote flags. Read-sync acknowledgments require a still-matching endpoint, chapter, desired state, path, and archive generation; unknown or foreign origin never syncs under current credentials. KOReader sidecar completed status plus close, not final-page progress or history membership, triggers native completion. Native metadata candidate selection respects primary-before-backup order. Failure or uncertainty refuses a speculative update.

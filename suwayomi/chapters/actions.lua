@@ -167,7 +167,9 @@ end
 
 function Methods:performChapterAction(manga, chapter, action_id)
     if self.isChapterInCurrentContext and not self:isChapterInCurrentContext(manga, chapter) then return false end
-    if not self:canMutateChapterArchive(manga, chapter) and action_id ~= "open" and action_id ~= "verify_download" then
+    local read_action = action_id == "mark_read" or action_id == "mark_unread" or action_id == "mark_previous_read"
+    if not self:canMutateChapterArchive(manga, chapter) and not read_action
+        and action_id ~= "open" and action_id ~= "verify_download" then
         return false
     end
     self.chapter_archive_request = nil
@@ -720,7 +722,8 @@ end
 function Methods:performBulkChapterAction(action_id, menu_context)
     local context = self.current_chapter_context
     local manga = context and context.manga
-    if manga and action_id ~= "select_all" and action_id ~= "clear_selection" and action_id ~= "scanlator_filter" then
+    if manga and action_id ~= "select_all" and action_id ~= "select_chapters"
+        and action_id ~= "clear_selection" and action_id ~= "scanlator_filter" then
         local recovered_refresh = action_id == "refresh_chapters" and not manga.local_only and manga.id
             and ((context.missing and not manga.endpoint_scope)
                 or (manga.endpoint_scope and manga.endpoint_scope
@@ -801,6 +804,9 @@ function Methods:performBulkChapterAction(action_id, menu_context)
     if action_id == "select_all" then
         self:selectAllChapters()
         return true
+    end
+    if action_id == "select_chapters" then
+        return self:startChapterSelection()
     end
     if action_id == "clear_selection" then
         self:clearChapterSelection()

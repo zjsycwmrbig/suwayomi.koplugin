@@ -1443,6 +1443,9 @@ msgstr "搜索：%1"
 msgid "Select all"
 msgstr "全选"
 
+msgid "Select chapters"
+msgstr "选择章节"
+
 msgid "Server URL"
 msgstr "服务器 URL"
 

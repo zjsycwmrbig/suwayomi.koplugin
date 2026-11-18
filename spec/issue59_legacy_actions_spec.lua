@@ -83,6 +83,27 @@ describe("issue 59 mixed legacy chapter actions", function()
         assert.same(before, f.settings:getStore():load())
         assert.same({}, f.writes)
     end)
+
+    it("marks a listed chapter read without registering its orphaned download", function()
+        f.existing["/downloads/1.cbz"] = true
+        f.finished["/downloads/1.cbz"] = true
+        f.plugin.schedulePendingReadSync = function() end
+        local actions = f.plugin:getChapterActions(f.manga, f.chapters[1])
+        assert.equals("mark_read", actions[3].id)
+        assert.is_true(f.plugin:performChapterAction(f.manga, f.chapters[1], "mark_read"))
+        local entry = f.settings:loadChapterLedger()["1:1"]
+        assert.is_true(entry.read)
+        assert.is_true(entry.pending_read_sync)
+        assert.is_nil(entry.path)
+        assert.same({}, f.writes)
+        assert.is_false(f.plugin:canMutateChapterArchive(f.manga, f.chapters[1]))
+        assert.is_true(f.existing["/downloads/1.cbz"])
+        f.plugin:performChapterAction(f.manga, f.chapters[1], "mark_unread")
+        f.chapters = f.plugin:mergeChaptersWithReadLedger(f.manga, f.chapters, { saved = true })
+        local rows = f:render({ saved = true })
+        assert.is_false(rows[1].is_read)
+        assert.is_nil(f.settings:loadChapterLedger()["1:1"].path)
+    end)
     it("shows saved policy and persists changes and Off with a legacy row", function()
         f:legacy("/downloads/1.cbz")
         assert(f.queue.refill:setPolicy(f.manga, 5))

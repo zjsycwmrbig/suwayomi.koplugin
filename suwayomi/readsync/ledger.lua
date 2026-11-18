@@ -2,7 +2,7 @@
 -- Read actions and reader lifecycle own metadata, completion publication, and sync ordering.
 -- Manual deletion and refill contribute policy to one staged document; archive bookkeeping
 -- remains with its existing owners. Failed or uncertain saves expose no committed targets.
--- Read merging consumes applicable read choices; command admission separately requires mutation eligibility.
+-- Read merging consumes applicable choices; manual read admission requires current server identity.
 -- Pending choices retain their recorded endpoint; current credentials never associate legacy entries.
 
 local SuwayomiSettings = require("suwayomi/settings")
@@ -138,14 +138,18 @@ function Methods:getChapterReadScope(manga, chapters, ledger)
     local current = SuwayomiSettings:normalizeEndpointScope(SuwayomiSettings:load().server_url)
     if not scope or scope ~= current or manga.local_only then return nil, "endpoint_mismatch" end
     local committed = self:loadChapterLedger()
-    local lookup = self.buildChapterDownloadLookup and self:buildChapterDownloadLookup(manga, committed)
+    local function conflicts(entry, chapter)
+        return entry and (entry.endpoint_scope ~= scope
+            or (entry.manga_id ~= nil and tostring(entry.manga_id) ~= tostring(manga.id))
+            or (entry.chapter_id ~= nil and tostring(entry.chapter_id) ~= tostring(chapter.id)))
+    end
+    -- Server read intent needs chapter identity, not authority over local bytes.
     for _, chapter in ipairs(chapters) do
         local key = self:getChapterLedgerKey(manga, chapter)
         local entry, saved = ledger[key], committed[key]
         if chapter.local_only or not manga.id or not chapter.id
-            or (self.canMutateChapterArchive and not self:canMutateChapterArchive(manga, chapter, lookup))
-            or (entry and entry.endpoint_scope ~= scope)
-            or (saved and saved.endpoint_scope ~= scope) then return nil, "origin_unknown_or_mismatched" end
+            or tostring(manga.id) == "" or tostring(chapter.id) == ""
+            or conflicts(entry, chapter) or conflicts(saved, chapter) then return nil, "origin_unknown_or_mismatched" end
     end
     return scope
 end

@@ -182,7 +182,8 @@ function Methods:prepareChapterMenuItems(manga, chapters, ledger, options, looku
             if metadata_finished then
                 metadata_finished_count = metadata_finished_count + 1
             end
-            if metadata_finished and not explicit_unread and not (options and options.confirmed_read_state) then
+            if metadata_finished and (read_authority or (read_entry and not read_entry.endpoint_scope) or manga.local_only)
+                and not explicit_unread and not (options and options.confirmed_read_state) then
                 item.is_read = true
                 if chapter.is_read ~= true then
                     chapter.is_read = true
@@ -381,10 +382,16 @@ function Methods:getChapterActions(manga, chapter)
     local lookup = self.buildChapterDownloadLookup and self:buildChapterDownloadLookup(manga)
     if manga.local_only or (self.canMutateChapterArchive and not self:canMutateChapterArchive(manga, chapter, lookup)) then
         if not self:isChapterDownloaded(manga, chapter, lookup) then return {} end
-        return {
+        local actions = {
             { id = "open", text = I18n.c("chapter action", "Open") },
             { id = "verify_download", text = I18n.t("Verify download") },
         }
+        if self.getChapterReadScope and self:getChapterReadScope(manga, { chapter }, self:loadChapterLedger()) then
+            actions[#actions + 1] = chapter.is_read == true
+                and { id = "mark_unread", text = I18n.t("Mark as unread") }
+                or { id = "mark_read", text = I18n.t("Mark as read") }
+        end
+        return actions
     end
     local status = self.getChapterDownloadStatus and self:getChapterDownloadStatus(manga, chapter) or nil
     local downloaded = self:isChapterDownloaded(manga, chapter, lookup)
@@ -485,6 +492,9 @@ function Methods:getBulkChapterActions(lookup)
 
     if self.current_chapter_context and #(self:getVisibleChapters(self.current_chapter_context.chapters or {})) > 0 then
         table.insert(actions, { id = "select_all", text = I18n.t("Select all") })
+        table.insert(actions, self.selection_mode
+            and { id = "clear_selection", text = I18n.t("Clear selection") }
+            or { id = "select_chapters", text = I18n.t("Select chapters") })
     end
 
     local manga_actions = MangaActionMenu.buildMainActions(self, self.current_chapter_context and self.current_chapter_context.manga,

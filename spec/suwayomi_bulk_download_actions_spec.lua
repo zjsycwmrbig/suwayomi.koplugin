@@ -160,6 +160,29 @@ describe("bounded bulk download actions", function()
         assert.are.same({}, messages)
     end)
 
+    it("queues precisely the tapped nonconsecutive selection including read chapters", function()
+        local items = openChapters(chapters(6))
+        items[4].is_read = true
+        local found
+        for _, action in ipairs(plugin:getBulkChapterActions()) do
+            if action.id == "select_chapters" then found = action end
+        end
+        assert.is_table(found)
+        assert.is_true(plugin:performBulkChapterAction(found.id))
+        plugin:handleChapterTap(manga, items[1])
+        plugin:handleChapterTap(manga, items[4])
+        plugin:handleChapterTap(manga, items[6])
+        plugin:handleChapterTap(manga, items[1])
+        assert.equals(2, plugin:getSelectedChapterCount())
+        plugin:performBulkChapterAction("download_selected")
+        local jobs = storedJobs()
+        assert.equals(2, #jobs)
+        assert.equals("c4", jobs[1].chapter.id)
+        assert.equals("c6", jobs[2].chapter.id)
+        assert.is_nil(queue:findPersistentJob("m1:c1"))
+        assert.is_false(plugin.selection_mode)
+    end)
+
     it("revalidates captured unread identities without backfilling after availability changes", function()
         local items = openChapters(chapters(51))
         plugin:performMangaAction(manga, "download_all_unread")

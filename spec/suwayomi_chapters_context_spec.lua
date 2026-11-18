@@ -90,6 +90,27 @@ describe("suwayomi/chapters/context", function()
         })
     end)
 
+    it("selects exact nonconsecutive chapters and stays in selection mode at zero", function()
+        local manga = { id = "m1" }
+        local chapters = { { id = "1" }, { id = "2" }, { id = "3" } }
+        local plugin = installPlugin({ current_chapter_context = { manga = manga, chapters = chapters },
+            refreshChapterMenu = function() end })
+        assert.is_true(plugin:startChapterSelection())
+        assert.equals(0, plugin:getSelectedChapterCount())
+        plugin:handleChapterTap(manga, chapters[1])
+        plugin:handleChapterTap(manga, chapters[3])
+        assert.same({ chapters[1], chapters[3] }, plugin:getSelectedChapters(manga, chapters))
+        plugin:handleChapterTap(manga, chapters[1])
+        plugin:handleChapterTap(manga, chapters[3])
+        assert.is_true(plugin.selection_mode)
+        plugin:pruneChapterSelectionForCurrentContext()
+        assert.is_true(plugin.selection_mode)
+        plugin:handleChapterTap(manga, chapters[2])
+        assert.same({ chapters[2] }, plugin:getSelectedChapters(manga, chapters))
+        plugin:clearChapterSelection()
+        assert.is_false(plugin.selection_mode)
+    end)
+
     it("selects the next saved chapter by source order and exact saved scanlator, regardless of reads", function()
         local chapters = {
             { id = "30", name = "Later downloaded", source_order = 4, scanlator = "A", is_read = false },
