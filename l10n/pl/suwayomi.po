@@ -35,6 +35,9 @@ msgctxt "source filter sort summary"
 msgid "%1 - Descending"
 msgstr ""
 
+msgid "%1 MB"
+msgstr ""
+
 #. Translators: %1 active downloads, %2 queued downloads, %3 failed downloads.
 msgid "%1 active, %2 queued, %3 failed"
 msgstr ""
@@ -116,6 +119,9 @@ msgid "About Library"
 msgstr ""
 
 msgid "Actions"
+msgstr ""
+
+msgid "Add chapter range"
 msgstr ""
 
 msgid "Add to library"
@@ -361,6 +367,9 @@ msgstr ""
 msgid "Chapter downloads"
 msgstr ""
 
+msgid "Chapter list changed. Select the range again."
+msgstr ""
+
 msgid "Chapter view changed. Run this download action again."
 msgstr ""
 
@@ -587,6 +596,9 @@ msgstr ""
 msgid "Could not update auto-download: %1"
 msgstr ""
 
+msgid "Could not update download pause state: %1"
+msgstr ""
+
 msgid "Could not update library."
 msgstr ""
 
@@ -605,6 +617,11 @@ msgstr ""
 msgid "Delete"
 msgstr ""
 
+msgid ""
+"Delete %1 local chapter files and their KOReader sidecars? This cannot be "
+"undone. Server files and read flags are unchanged. %2 files are blocked."
+msgstr ""
+
 msgid "Delete %1 read download from device?"
 msgid_plural "Delete %1 read downloads from device?"
 msgstr[0] ""
@@ -621,6 +638,12 @@ msgid "Delete after reading"
 msgstr ""
 
 msgid "Delete after reading: %1"
+msgstr ""
+
+msgid "Delete all local downloads"
+msgstr ""
+
+msgid "Delete all read local downloads"
 msgstr ""
 
 msgid "Delete chapter settings are unavailable."
@@ -647,7 +670,13 @@ msgstr ""
 msgid "Delete saved filter \"%1\"?"
 msgstr ""
 
+msgid "Delete selected local downloads"
+msgstr ""
+
 msgid "Delete when marked read: %1"
+msgstr ""
+
+msgid "Deleted %1 local downloads; %2 skipped or failed."
 msgstr ""
 
 msgid "Deletion not accepted: download busy; request again"
@@ -1122,7 +1151,15 @@ msgstr ""
 msgid "No eligible chapters match the saved scanlator filter."
 msgstr ""
 
+msgid ""
+"No eligible local downloads. Busy, open, conflicting, or unverified files "
+"are preserved."
+msgstr ""
+
 msgid "No error details were recorded."
+msgstr ""
+
+msgid "No local chapter archives found."
 msgstr ""
 
 msgid "No manga in this library category."
@@ -1178,6 +1215,9 @@ msgstr ""
 msgid "Not installed"
 msgstr ""
 
+msgid "Now tap the last chapter of the range."
+msgstr ""
+
 msgid "Obsolete"
 msgstr ""
 
@@ -1193,6 +1233,12 @@ msgid "On"
 msgstr ""
 
 msgid "On hiatus"
+msgstr ""
+
+msgid "On-device downloads"
+msgstr ""
+
+msgid "On-device downloads (%1)"
 msgstr ""
 
 msgid "Ongoing"
@@ -1230,6 +1276,12 @@ msgid "Parallel downloads: %1"
 msgstr ""
 
 msgid "Password"
+msgstr ""
+
+msgid "Pause all downloads"
+msgstr ""
+
+msgid "Paused"
 msgstr ""
 
 msgid "Pending read changes are not associated with the configured server."
@@ -1320,6 +1372,9 @@ msgid "Reopen the chapter list and try again."
 msgstr ""
 
 msgid "Reset filters"
+msgstr ""
+
+msgid "Resume all downloads"
 msgstr ""
 
 msgid "Retry"
@@ -1479,6 +1534,11 @@ msgstr[0] ""
 msgstr[1] ""
 msgstr[2] ""
 
+msgid ""
+"Some folders could not be scanned or the scan limit was reached. The list "
+"may be incomplete."
+msgstr ""
+
 msgid "Sort by latest arrivals"
 msgstr ""
 
@@ -1569,6 +1629,11 @@ msgid "Sync"
 msgstr ""
 
 msgid "Sync pending"
+msgstr ""
+
+msgid ""
+"Tap the first chapter, then the last chapter of the range. Existing "
+"selections are kept."
 msgstr ""
 
 msgid "Tap to retry"

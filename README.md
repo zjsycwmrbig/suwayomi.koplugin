@@ -68,6 +68,32 @@ Tap individual rows across pages to select or deselect them, then choose
 selection. Deselecting the last row keeps selection mode active; **Clear selection**
 exits it. Selected downloads can include already-read chapters and skip chapters
 already downloaded or queued. Each action admits at most 50 new downloads.
+Choose **Add chapter range**, tap its first and last rows (across pages if
+needed), then add individual chapters or another range. Ranges follow the
+currently displayed, filtered list, include both endpoints, and preserve previous
+selections. The second tap completes range mode; subsequent taps toggle one row.
+
+The home **Downloads** entry manages device-local work across manga. **Pause all
+downloads** stops current transfer attempts while keeping their jobs, retry
+budgets, and destinations. Pause survives restart and also holds newly queued
+work. **Resume all downloads** restarts interrupted chapter attempts; it does not
+resume partial bytes. A completed archive published during stopping is preserved.
+
+Open **On-device downloads** from that screen to select local files across manga.
+Its title menu offers **Delete selected local downloads**, **Delete all read local
+downloads**, and **Delete all local downloads**, with an irreversible-deletion
+confirmation. Ordinary deletion removes the CBZ and its KOReader sidecars, while
+preserving server files and read flags. Read cleanup uses local ledger read state
+and honors explicit pending unread choices; unregistered files are never guessed
+to be read. Open, busy, replaced, conflicting, or unproved files are skipped.
+
+The inventory includes recorded existing files and CBZs in the configured download
+folder/subfolders, not unrelated files elsewhere on the Kindle. Symlinks and
+partial files are excluded. Scanning is bounded at 20 directory levels and 20,000
+entries, with an incomplete-list notice when necessary. Recorded files outside
+the current download root remain visible but cannot be deleted through this
+screen. Use **Refresh** to pick up external file changes; selecting rows does not
+rescan folders or adopt server identities.
 
 Manual read/unread changes use the chapter's server identity independently of
 local download registration. If an archive exists without a verified association,

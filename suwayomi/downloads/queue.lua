@@ -82,6 +82,35 @@ function DownloadQueue:isChapterBusy(key)
     return self:getActiveJob(key) ~= nil or self:getStoppingJob(key) ~= nil
 end
 
+-- Inventory rows may lack chapter IDs; protect their paths as well as job keys.
+function DownloadQueue:isArchivePathBusy(path)
+    if not self:checkStoreFence() then return true end
+    local Identity = require("suwayomi/chapters/archive_identity")
+    local resolved = Identity.resolve(path)
+    if not resolved then return true end
+    local function matches(job)
+        local candidates = { self:getTargetChapterPath(job) }
+        if job.progress and job.progress.path then candidates[#candidates + 1] = job.progress.path end
+        if job.pending_completion then candidates[#candidates + 1] = job.pending_completion end
+        if self.downloader.getChapterPathCandidates and job.manga and job.chapter and job.download_directory then
+            for _, candidate in ipairs(self.downloader:getChapterPathCandidates(job.download_directory, job.manga, job.chapter) or {}) do
+                candidates[#candidates + 1] = candidate
+            end
+        end
+        for _, candidate in pairs(candidates) do
+            if candidate == path or Identity.resolve(candidate) == resolved then return true end
+        end
+        return false
+    end
+    for _, job in pairs(self.active_jobs) do if matches(job) then return true end end
+    for _, job in pairs(self.stopping_jobs) do if matches(job) then return true end end
+    for _, job in ipairs(self:loadPersistentJobs()) do
+        if job.state ~= "failed" and job.state ~= "completed" and job.state ~= "cancelled"
+            and matches(job) then return true end
+    end
+    return false
+end
+
 function DownloadQueue:ownsChapter(key)
     if self:isChapterBusy(key) then return true end
     for _, item in ipairs(self.items) do
@@ -111,6 +140,33 @@ end
 
 function DownloadQueue:isRecovering()
     return self.recovery_pending == true
+end
+
+function DownloadQueue:isPaused()
+    return self.settings:getStore():readKey("downloads_paused") == true
+end
+
+-- Pause preserves jobs and retry policy; stopped attempts restart on resume.
+function DownloadQueue:setPaused(paused)
+    if not self:checkStoreFence() then return nil, "store_blocked" end
+    paused = paused == true
+    local ok, err = self.settings:getStore():saveDocument(function(doc)
+        doc.downloads_paused = paused
+        if paused then
+            for _, job in ipairs(doc.download_queue or {}) do
+                if job.version == nil and job.state == "downloading" then job.state = "queued" end
+            end
+        end
+    end)
+    if not ok then
+        if self:isBlocked() then self:scheduleReconciliation() end
+        return nil, err
+    end
+    local reconciled, reason = self:reconcile()
+    if not reconciled then return nil, reason end
+    if not paused then self:process() end
+    self.onStatusChanged()
+    return true
 end
 
 function DownloadQueue:stopAdmission()
@@ -355,6 +411,7 @@ function DownloadQueue:getSnapshot()
         refills = self.refill and self.refill:snapshot() or {},
         manual_deletion = {},
         manual_deletion_error = "unavailable",
+        paused = self:isPaused(),
     }
     if self.manual_deletion then
         snapshot.manual_deletion, snapshot.manual_deletion_error = self.manual_deletion:snapshot()

@@ -34,6 +34,9 @@ msgctxt "source filter sort summary"
 msgid "%1 - Descending"
 msgstr "%1 - за спаданням"
 
+msgid "%1 MB"
+msgstr ""
+
 #. Translators: %1 active downloads, %2 queued downloads, %3 failed downloads.
 msgid "%1 active, %2 queued, %3 failed"
 msgstr "%1 активних, %2 у черзі, %3 невдалих"
@@ -133,6 +136,9 @@ msgstr "Бібліотека"
 
 msgid "Actions"
 msgstr "Дії"
+
+msgid "Add chapter range"
+msgstr ""
 
 msgid "Add to library"
 msgstr "Додати до бібліотеки"
@@ -407,6 +413,10 @@ msgstr "Час очікування завантаження розділу ми
 msgid "Chapter downloads"
 msgstr "Завантаження розділів"
 
+#, fuzzy
+msgid "Chapter list changed. Select the range again."
+msgstr "Подання розділів змінилося. Виконайте цю дію завантаження ще раз."
+
 msgid "Chapter view changed. Run this download action again."
 msgstr "Подання розділів змінилося. Виконайте цю дію завантаження ще раз."
 
@@ -674,6 +684,10 @@ msgstr "Не вдалося зберегти налаштування."
 msgid "Could not update auto-download: %1"
 msgstr "Не вдалося оновити автозавантаження: %1"
 
+#, fuzzy
+msgid "Could not update download pause state: %1"
+msgstr "Не вдалося оновити автозавантаження: %1"
+
 msgid "Could not update library."
 msgstr "Не вдалося оновити бібліотеку."
 
@@ -694,6 +708,11 @@ msgstr "Текст пошуку"
 msgid "Delete"
 msgstr "Видалити"
 
+msgid ""
+"Delete %1 local chapter files and their KOReader sidecars? This cannot be "
+"undone. Server files and read flags are unchanged. %2 files are blocked."
+msgstr ""
+
 msgid "Delete %1 read download from device?"
 msgid_plural "Delete %1 read downloads from device?"
 msgstr[0] "Видалити з пристрою файл %1 прочитаного розділу?"
@@ -711,6 +730,14 @@ msgstr "Видаляти після прочитання"
 
 msgid "Delete after reading: %1"
 msgstr "Видаляти після прочитання: %1"
+
+#, fuzzy
+msgid "Delete all local downloads"
+msgstr "Видалити файли прочитаних розділів"
+
+#, fuzzy
+msgid "Delete all read local downloads"
+msgstr "Видалити файли прочитаних розділів"
 
 msgid "Delete chapter settings are unavailable."
 msgstr "Налаштування видалення розділів недоступні."
@@ -737,8 +764,15 @@ msgstr "Видалити збережений фільтр"
 msgid "Delete saved filter \"%1\"?"
 msgstr "Видалити збережений фільтр \"%1\"?"
 
+#, fuzzy
+msgid "Delete selected local downloads"
+msgstr "Видалити файли прочитаних розділів"
+
 msgid "Delete when marked read: %1"
 msgstr "Видаляти після позначення «Прочитано»: %1"
+
+msgid "Deleted %1 local downloads; %2 skipped or failed."
+msgstr ""
 
 msgid "Deletion not accepted: download busy; request again"
 msgstr ""
@@ -1242,8 +1276,17 @@ msgstr ""
 "Жоден придатний до завантаження розділ не відповідає збереженому фільтру "
 "сканлейтора."
 
+msgid ""
+"No eligible local downloads. Busy, open, conflicting, or unverified files "
+"are preserved."
+msgstr ""
+
 msgid "No error details were recorded."
 msgstr "Подробиці помилки не збережено."
+
+#, fuzzy
+msgid "No local chapter archives found."
+msgstr "Завантажені розділи збережено в %1."
 
 msgid "No manga in this library category."
 msgstr "У цій категорії бібліотеки немає манґи."
@@ -1305,6 +1348,9 @@ msgstr "Не в бібліотеці"
 msgid "Not installed"
 msgstr "Не встановлено"
 
+msgid "Now tap the last chapter of the range."
+msgstr ""
+
 msgid "Obsolete"
 msgstr "Застаріле"
 
@@ -1321,6 +1367,14 @@ msgstr "Увімкнено"
 
 msgid "On hiatus"
 msgstr "На паузі"
+
+#, fuzzy
+msgid "On-device downloads"
+msgstr "Скасувати завантаження"
+
+#, fuzzy
+msgid "On-device downloads (%1)"
+msgstr "Скасувати завантаження"
 
 msgid "Ongoing"
 msgstr "Виходить"
@@ -1359,6 +1413,13 @@ msgstr "Паралельні завантаження: %1"
 
 msgid "Password"
 msgstr "Пароль"
+
+#, fuzzy
+msgid "Pause all downloads"
+msgstr "Скасувати всі завантаження"
+
+msgid "Paused"
+msgstr ""
 
 msgid "Pending read changes are not associated with the configured server."
 msgstr ""
@@ -1456,6 +1517,10 @@ msgstr "Знову відкрийте список розділів і повт�
 
 msgid "Reset filters"
 msgstr "Скинути фільтри"
+
+#, fuzzy
+msgid "Resume all downloads"
+msgstr "Скасувати всі завантаження"
 
 msgid "Retry"
 msgstr "Повторити"
@@ -1627,6 +1692,11 @@ msgstr[0] ""
 msgstr[1] ""
 msgstr[2] ""
 
+msgid ""
+"Some folders could not be scanned or the scan limit was reached. The list "
+"may be incomplete."
+msgstr ""
+
 msgid "Sort by latest arrivals"
 msgstr ""
 
@@ -1722,6 +1792,11 @@ msgstr "Синхронізувати"
 #, fuzzy
 msgid "Sync pending"
 msgstr "За зростанням"
+
+msgid ""
+"Tap the first chapter, then the last chapter of the range. Existing "
+"selections are kept."
+msgstr ""
 
 msgid "Tap to retry"
 msgstr "Натисніть, щоб повторити"

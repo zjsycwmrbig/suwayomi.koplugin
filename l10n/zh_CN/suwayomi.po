@@ -34,6 +34,9 @@ msgctxt "source filter sort summary"
 msgid "%1 - Descending"
 msgstr "%1 - 降序"
 
+msgid "%1 MB"
+msgstr "%1 MB"
+
 #. Translators: %1 active downloads, %2 queued downloads, %3 failed downloads.
 msgid "%1 active, %2 queued, %3 failed"
 msgstr "%1 个进行中，%2 个排队中，%3 个失败"
@@ -103,6 +106,9 @@ msgstr "书架"
 
 msgid "Actions"
 msgstr "操作"
+
+msgid "Add chapter range"
+msgstr "追加章节范围"
 
 msgid "Add to library"
 msgstr "添加到书架"
@@ -354,6 +360,9 @@ msgstr "章节下载超时。"
 msgid "Chapter downloads"
 msgstr "章节下载"
 
+msgid "Chapter list changed. Select the range again."
+msgstr "章节列表已变化，请重新选择范围。"
+
 msgid "Chapter view changed. Run this download action again."
 msgstr "章节视图已更改。请再次执行此下载操作。"
 
@@ -590,6 +599,9 @@ msgstr "无法保存设置。"
 msgid "Could not update auto-download: %1"
 msgstr "无法更新自动下载：%1"
 
+msgid "Could not update download pause state: %1"
+msgstr "无法更新下载暂停状态：%1"
+
 msgid "Could not update library."
 msgstr "无法更新书架。"
 
@@ -610,6 +622,13 @@ msgstr "搜索文本"
 msgid "Delete"
 msgstr "删除"
 
+msgid ""
+"Delete %1 local chapter files and their KOReader sidecars? This cannot be "
+"undone. Server files and read flags are unchanged. %2 files are blocked."
+msgstr ""
+"删除 %1 个本地章节文件及其 KOReader 阅读记录？此操作无法撤销。服务器文件和已"
+"读标记保持不变。另有 %2 个文件无法安全删除。"
+
 msgid "Delete %1 read download from device?"
 msgid_plural "Delete %1 read downloads from device?"
 msgstr[0] "从设备删除 %1 个已读章节的文件？"
@@ -623,6 +642,12 @@ msgstr "读完后删除"
 
 msgid "Delete after reading: %1"
 msgstr "读完后删除：%1"
+
+msgid "Delete all local downloads"
+msgstr "删除全部本地下载"
+
+msgid "Delete all read local downloads"
+msgstr "清理全部已读下载"
 
 msgid "Delete chapter settings are unavailable."
 msgstr "章节删除设置不可用。"
@@ -649,8 +674,14 @@ msgstr "删除已保存的筛选器"
 msgid "Delete saved filter \"%1\"?"
 msgstr "要删除已保存的筛选器“%1”吗？"
 
+msgid "Delete selected local downloads"
+msgstr "删除选中的本地下载"
+
 msgid "Delete when marked read: %1"
 msgstr "标为已读后删除：%1"
+
+msgid "Deleted %1 local downloads; %2 skipped or failed."
+msgstr "已删除 %1 个本地下载；%2 个跳过或失败。"
 
 msgid "Deletion not accepted: download busy; request again"
 msgstr "删除请求未被接受：下载正在进行中；请稍后重新请求"
@@ -1132,8 +1163,17 @@ msgstr ""
 msgid "No eligible chapters match the saved scanlator filter."
 msgstr "没有符合下载条件的章节匹配已保存的汉化组筛选器。"
 
+msgid ""
+"No eligible local downloads. Busy, open, conflicting, or unverified files "
+"are preserved."
+msgstr ""
+"没有可删除的本地下载。正在下载、阅读中、记录冲突或身份未确认的文件会保留。"
+
 msgid "No error details were recorded."
 msgstr "未记录错误详情。"
+
+msgid "No local chapter archives found."
+msgstr "未找到本地章节文件。"
 
 msgid "No manga in this library category."
 msgstr "此书架分类中没有漫画。"
@@ -1193,6 +1233,9 @@ msgstr "不在书架中"
 msgid "Not installed"
 msgstr "未安装"
 
+msgid "Now tap the last chapter of the range."
+msgstr "现在请点击范围的最后一章。"
+
 msgid "Obsolete"
 msgstr "过时"
 
@@ -1209,6 +1252,12 @@ msgstr "开"
 
 msgid "On hiatus"
 msgstr "暂停更新"
+
+msgid "On-device downloads"
+msgstr "本地下载管理"
+
+msgid "On-device downloads (%1)"
+msgstr "本地下载管理（%1）"
 
 msgid "Ongoing"
 msgstr "连载中"
@@ -1247,6 +1296,12 @@ msgstr "并行下载数：%1"
 
 msgid "Password"
 msgstr "密码"
+
+msgid "Pause all downloads"
+msgstr "暂停全部下载"
+
+msgid "Paused"
+msgstr "已暂停"
 
 msgid "Pending read changes are not associated with the configured server."
 msgstr ""
@@ -1338,6 +1393,9 @@ msgstr "请重新打开章节列表并重试。"
 
 msgid "Reset filters"
 msgstr "重置筛选器"
+
+msgid "Resume all downloads"
+msgstr "继续全部下载"
 
 msgid "Retry"
 msgstr "重试"
@@ -1501,6 +1559,11 @@ msgid "Skipped %1 chapter without a verified server association."
 msgid_plural "Skipped %1 chapters without a verified server association."
 msgstr[0] ""
 
+msgid ""
+"Some folders could not be scanned or the scan limit was reached. The list "
+"may be incomplete."
+msgstr "部分文件夹无法扫描或已达到扫描上限，列表可能不完整。"
+
 msgid "Sort by latest arrivals"
 msgstr ""
 
@@ -1595,6 +1658,11 @@ msgstr "同步"
 #, fuzzy
 msgid "Sync pending"
 msgstr "升序"
+
+msgid ""
+"Tap the first chapter, then the last chapter of the range. Existing "
+"selections are kept."
+msgstr "先点击范围的第一章，再点击最后一章。已选章节会保留。"
 
 msgid "Tap to retry"
 msgstr "点按重试"

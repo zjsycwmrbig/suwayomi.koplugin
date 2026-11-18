@@ -411,7 +411,9 @@ describe("download failure user actions", function()
         failDownload("terminal error", false)
         assert.are.equal(1, queue:getFailedCount())
         assert.are.equal("Failed", menu.item_table[1].mandatory)
-        menu.item_table[#menu.item_table].callback()
+        for _, row in ipairs(menu.item_table) do
+            if row.text == "Clear failed" then row.callback(); break end
+        end
         assert.are.equal(0, queue:getFailedCount())
         assert.are.same({}, messages)
         local current_menu = plugin.current_downloads_menu

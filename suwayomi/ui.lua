@@ -58,6 +58,7 @@ SuwayomiUI.updateLibraryMangaMenu = BrowseUI.updateLibraryMangaMenu
 
 SuwayomiUI.buildDownloadsMenuTable = DownloadsUI.buildDownloadsMenuTable
 SuwayomiUI.showDownloadsMenu = DownloadsUI.showDownloadsMenu
+SuwayomiUI.showLocalDownloads = DownloadsUI.showLocalDownloads
 SuwayomiUI.updateDownloadsMenu = DownloadsUI.updateDownloadsMenu
 SuwayomiUI.showDownloadErrorDetails = DownloadsUI.showDownloadErrorDetails
 SuwayomiUI.formatRefillStatus = DownloadsUI.formatRefillStatus

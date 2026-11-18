@@ -480,6 +480,7 @@ function Methods:getBulkChapterActions(lookup)
         table.insert(actions, { id = "mark_read_selected", text = I18n.t("Mark read") })
         table.insert(actions, { id = "mark_unread_selected", text = I18n.t("Mark unread") })
         table.insert(actions, { id = "clear_selection", text = I18n.t("Clear selection") })
+        table.insert(actions, { id = "select_range", text = I18n.t("Add chapter range") })
         if show_scanlator_filter then
             table.insert(actions, { id = "scanlator_filter", text = I18n.t("Scanlator filter"), submenu = true })
         end
@@ -495,6 +496,7 @@ function Methods:getBulkChapterActions(lookup)
         table.insert(actions, self.selection_mode
             and { id = "clear_selection", text = I18n.t("Clear selection") }
             or { id = "select_chapters", text = I18n.t("Select chapters") })
+        table.insert(actions, { id = "select_range", text = I18n.t("Add chapter range") })
     end
 
     local manga_actions = MangaActionMenu.buildMainActions(self, self.current_chapter_context and self.current_chapter_context.manga,

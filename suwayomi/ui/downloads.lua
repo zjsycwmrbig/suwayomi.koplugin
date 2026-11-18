@@ -14,6 +14,35 @@ local menu_utils = require("suwayomi/ui/menu_utils")
 
 local DownloadsUI = {}
 
+function DownloadsUI.showLocalDownloads(items, selected, options)
+    local list_menu = require("suwayomi/ui/list_menu")
+    local rows = {}
+    for _, item in ipairs(items) do
+        local archive = item
+        rows[#rows + 1] = {
+            text = (selected[item.path] and "[x] " or "[ ] ") .. item.label,
+            subtitle = item.path,
+            mandatory = I18n.f("%1 MB", string.format("%.1f", item.size / 1048576))
+                .. (item.read and (" · " .. I18n.t("Read")) or ""),
+            keep_menu_open = true,
+            callback = function() options.onToggle(archive.path) end,
+        }
+    end
+    if #rows == 0 then rows[1] = { text = I18n.t("No local chapter archives found."), select_enabled = false } end
+    local menu_options = {}
+    for key, value in pairs(options) do menu_options[key] = value end
+    menu_options.title = I18n.f("On-device downloads (%1)", #items)
+    menu_options.item_table = rows
+    if options.menu then
+        menu_utils.bindMenuCallbacks(rows, options.menu)
+        list_menu.update(options.menu, menu_options)
+        return options.menu
+    end
+    local menu = list_menu.show(menu_options)
+    menu_utils.bindMenuCallbacks(rows, menu)
+    return menu
+end
+
 function DownloadsUI.showAutoMarkPrompt(options)
     local ConfirmBox = require("ui/widget/confirmbox")
     local CheckButton = require("ui/widget/checkbutton")
@@ -284,7 +313,6 @@ function DownloadsUI.buildDownloadsMenuTable(snapshot, callbacks, options)
 
     if isDownloadsSnapshotEmpty(snapshot) then
         appendEmptyStateRows(menu_table, snapshot, options)
-        return menu_table
     end
 
     for _, job in ipairs(snapshot.active or {}) do
@@ -310,7 +338,7 @@ function DownloadsUI.buildDownloadsMenuTable(snapshot, callbacks, options)
         table.insert(menu_table, {
             text = formatDownloadJobLabel(job),
             keep_menu_open = true,
-            mandatory = job.retry_at and I18n.t("Retry scheduled") or queued_label,
+            mandatory = snapshot.paused and I18n.t("Paused") or (job.retry_at and I18n.t("Retry scheduled") or queued_label),
             subtitle = StatusFormatter.formatArchiveStatus(job.progress)
                 or (job.retry_at and StatusFormatter.formatRetryTime(job.retry_at) or nil),
             callback = function(menu)
@@ -366,6 +394,14 @@ function DownloadsUI.buildDownloadsMenuTable(snapshot, callbacks, options)
         })
     end
 
+    if callbacks.onLocalDownloads then
+        table.insert(menu_table, { text = I18n.t("On-device downloads"), keep_menu_open = true,
+            callback = callbacks.onLocalDownloads })
+    end
+    if callbacks.onPauseDownloads then
+        table.insert(menu_table, { text = snapshot.paused and I18n.t("Resume all downloads") or I18n.t("Pause all downloads"),
+            keep_menu_open = true, callback = callbacks.onPauseDownloads })
+    end
     return menu_table
 end
 

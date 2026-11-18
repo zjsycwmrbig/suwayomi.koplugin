@@ -299,7 +299,8 @@ describe("suwayomi/downloads/controller", function()
         assert.are.equal("cancel_all", state.title_menu_options.actions[1].id)
         assert.are.equal("Cancel all downloads", state.title_menu_options.actions[1].text)
         assert.is_true(state.title_menu_options.actions[1].destructive)
-        assert.is_nil(state.title_menu_options.actions[2])
+        assert.are.equal("pause_all", state.title_menu_options.actions[2].id)
+        assert.are.equal("local_downloads", state.title_menu_options.actions[3].id)
 
         state.downloads_menu_options.on_title_bar_left_tap(menu)
         assert.are.equal(menu, state.title_menu_tapped)
@@ -539,7 +540,8 @@ describe("suwayomi/downloads/controller", function()
             },
         }
         local queue = DownloadQueue:new{
-            settings = { loadDownloadQueue = function() return { job } end },
+            settings = { loadDownloadQueue = function() return { job } end,
+                getStore = function() return { readKey = function() return false end } end },
         }
         queue.redownload = function() error("stale damage authorized forced repair") end
         queue.verifyArchive = function() error("stale details started verification") end

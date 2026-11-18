@@ -448,6 +448,7 @@ end
 function Methods:clearChapterSelection(skip_refresh)
     self.selected_chapters = {}
     self.selection_mode = false
+    self.chapter_range_selecting, self.chapter_range_start = nil, nil
     if not skip_refresh then
         self:refreshChapterMenu()
     end
@@ -455,6 +456,7 @@ end
 
 
 function Methods:selectAllChapters()
+    self.chapter_range_selecting, self.chapter_range_start = nil, nil
     local context = self.current_chapter_context
     local manga = context and context.manga
     local chapters = self:getVisibleChapters(context and context.chapters or {})
@@ -472,6 +474,33 @@ end
 function Methods:startChapterSelection()
     if not self.current_chapter_context or self.suwayomi_host_retired then return false end
     self.selected_chapters = self.selected_chapters or {}
+    self.selection_mode = true
+    self.chapter_range_selecting, self.chapter_range_start = nil, nil
+    self:refreshChapterMenu({ quick = true })
+    return true
+end
+
+function Methods:startChapterRangeSelection()
+    if not self:startChapterSelection() then return false end
+    self.chapter_range_selecting = true
+    self:showMessage(I18n.t("Tap the first chapter, then the last chapter of the range. Existing selections are kept."), { toast = true })
+    return true
+end
+
+function Methods:selectChapterRange(manga, first_key, last_key)
+    if not self:isCurrentChapterContextForManga(manga) then return false end
+    local chapters = self:getVisibleChapters(self.current_chapter_context.chapters)
+    local first, last
+    for index, item in ipairs(chapters) do
+        local key = self:getChapterSelectionKey(manga, item)
+        if key == first_key then first = index end
+        if key == last_key then last = index end
+    end
+    if not first or not last then return false end
+    self.selected_chapters = self.selected_chapters or {}
+    for index = math.min(first, last), math.max(first, last) do
+        self.selected_chapters[self:getChapterSelectionKey(manga, chapters[index])] = true
+    end
     self.selection_mode = true
     self:refreshChapterMenu({ quick = true })
     return true
@@ -493,6 +522,20 @@ end
 
 function Methods:handleChapterTap(manga, chapter)
     if not self:isChapterInCurrentContext(manga, chapter) then return false end
+    if self.chapter_range_selecting then
+        local key = self:getChapterSelectionKey(manga, chapter)
+        if not self.chapter_range_start then
+            self.chapter_range_start = key
+            self:showMessage(I18n.t("Now tap the last chapter of the range."), { toast = true })
+        else
+            local first_key = self.chapter_range_start
+            self.chapter_range_selecting, self.chapter_range_start = nil, nil
+            if not self:selectChapterRange(manga, first_key, key) then
+                self:showMessage(I18n.t("Chapter list changed. Select the range again."))
+            end
+        end
+        return true
+    end
     if self.selection_mode then
         self:toggleChapterSelection(manga, chapter)
         return

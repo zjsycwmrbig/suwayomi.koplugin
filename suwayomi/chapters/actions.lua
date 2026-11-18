@@ -722,7 +722,7 @@ end
 function Methods:performBulkChapterAction(action_id, menu_context)
     local context = self.current_chapter_context
     local manga = context and context.manga
-    if manga and action_id ~= "select_all" and action_id ~= "select_chapters"
+    if manga and action_id ~= "select_all" and action_id ~= "select_chapters" and action_id ~= "select_range"
         and action_id ~= "clear_selection" and action_id ~= "scanlator_filter" then
         local recovered_refresh = action_id == "refresh_chapters" and not manga.local_only and manga.id
             and ((context.missing and not manga.endpoint_scope)
@@ -807,6 +807,9 @@ function Methods:performBulkChapterAction(action_id, menu_context)
     end
     if action_id == "select_chapters" then
         return self:startChapterSelection()
+    end
+    if action_id == "select_range" then
+        return self:startChapterRangeSelection()
     end
     if action_id == "clear_selection" then
         self:clearChapterSelection()

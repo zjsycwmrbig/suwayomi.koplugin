@@ -1,6 +1,6 @@
 -- Boundary: DownloadsController.
 --
--- Responsibility: Owns Downloads controls, durable refill commands, optional global finish-marking setup, and downloaded-read reconciliation.
+-- Responsibility: Owns Downloads controls, local inventory/batch removal, durable refill commands, finish-marking setup, and read reconciliation.
 -- Owned state: Uses the device-local queue only; it must not call Suwayomi server download mutations.
 -- Dependencies: KOReader UI helpers and Suwayomi runtime modules, including the plugin i18n facade.
 -- External data: callers must continue to treat API responses, settings values, worker files, and filesystem paths as untrusted until checked locally.
@@ -22,6 +22,111 @@ function DownloadsController:new(deps)
 end
 
 local Methods = {}
+
+function Methods:showLocalDownloads(refresh, rescan)
+    if self.suwayomi_host_retired then return false end
+    local previous = self.current_local_downloads_menu
+    if not refresh or not previous then self.local_download_selection = {} end
+    local items, issues = self.local_download_items, {}
+    if not refresh or rescan or not items then
+        items, issues = require("suwayomi/downloads/local_library").collect(SuwayomiSettings)
+    end
+    self.local_download_items = items
+    local valid = {}
+    for _, item in ipairs(items) do valid[item.path] = true end
+    for path in pairs(self.local_download_selection) do
+        if not valid[path] then self.local_download_selection[path] = nil end
+    end
+    local menu
+    local function live()
+        return not self.suwayomi_host_retired and menu and self.current_local_downloads_menu == menu
+            and (not self.isSuwayomiScreenActive or self:isSuwayomiScreenActive(menu))
+    end
+    local actions = {
+        { id = "select_all", text = I18n.t("Select all") },
+        { id = "clear_selection", text = I18n.t("Clear selection") },
+        { id = "refresh", text = I18n.t("Refresh") },
+        { id = "delete_selected", text = I18n.t("Delete selected local downloads"), destructive = true },
+        { id = "delete_read", text = I18n.t("Delete all read local downloads"), destructive = true },
+        { id = "delete_all", text = I18n.t("Delete all local downloads"), destructive = true },
+    }
+    local options = self:getTitleBarMenuOptions({
+        title = I18n.t("On-device downloads"), actions = actions,
+        captureActionGuard = function() return live end,
+        onSelect = function(action)
+            if not live() then return false end
+            if action.id == "select_all" then
+                for _, item in ipairs(items) do self.local_download_selection[item.path] = true end
+            elseif action.id == "clear_selection" then self.local_download_selection = {}
+            elseif action.id ~= "refresh" then return self:confirmLocalDownloadDeletion(action.id, menu) end
+            return self:showLocalDownloads(true, action.id == "refresh")
+        end,
+    })
+    options.onToggle = function(path)
+        if not live() then return end
+        self.local_download_selection[path] = not self.local_download_selection[path] or nil
+        self:showLocalDownloads(true)
+    end
+    options.close_callback = function()
+        if self.current_local_downloads_menu == menu then self.current_local_downloads_menu = nil end
+    end
+    options.menu = refresh and previous or nil
+    menu = SuwayomiUI.showLocalDownloads(items, self.local_download_selection, options)
+    self.current_local_downloads_menu = menu
+    if not options.menu and self.trackSuwayomiScreen then self:trackSuwayomiScreen("local_downloads", menu) end
+    if issues.limited or issues.inaccessible then
+        self:showMessage(I18n.t("Some folders could not be scanned or the scan limit was reached. The list may be incomplete."))
+    end
+    return menu
+end
+
+function Methods:confirmLocalDownloadDeletion(mode, menu)
+    if mode ~= "delete_selected" and mode ~= "delete_read" and mode ~= "delete_all" then return false end
+    local queue = self:getDownloadQueue()
+    local captures, blocked = {}, 0
+    for _, item in ipairs(self.local_download_items or {}) do
+        if mode == "delete_all" or mode == "delete_read" and item.read
+            or mode == "delete_selected" and self.local_download_selection[item.path] then
+            local capture = not item.conflict and not queue:isArchivePathBusy(item.path)
+                and queue.manual_deletion:capture(item.key, item.path, SuwayomiSettings:loadDownloadDirectory())
+            if capture and not capture.reason then
+                captures[#captures + 1] = { item = item, capture = capture }
+            else blocked = blocked + 1 end
+        end
+    end
+    if #captures == 0 then
+        self:showMessage(I18n.t("No eligible local downloads. Busy, open, conflicting, or unverified files are preserved."))
+        return false
+    end
+    SuwayomiUI.showConfirm({
+        text = I18n.f("Delete %1 local chapter files and their KOReader sidecars? This cannot be undone. Server files and read flags are unchanged. %2 files are blocked.", #captures, blocked),
+        ok_text = I18n.t("Delete downloads"),
+        ok_callback = function()
+            if self.suwayomi_host_retired or self.current_local_downloads_menu ~= menu
+                or (self.isSuwayomiScreenActive and not self:isSuwayomiScreenActive(menu)) then return end
+            local removed, failed = 0, blocked
+            local current = {}
+            for _, item in ipairs(require("suwayomi/downloads/local_library").collect(SuwayomiSettings)) do current[item.path] = item end
+            for _, prepared in ipairs(captures) do
+                local item, capture = prepared.item, prepared.capture
+                local latest = current[item.path]
+                if latest and not latest.conflict and latest.key == item.key and (mode ~= "delete_read" or latest.read)
+                    and not queue:ownsChapter(item.key) and not queue:isArchivePathBusy(item.path) then
+                    local ok = self:deleteChapterFromDeviceWithOptions(item.manga, item.chapter, {
+                        chapter_path = item.path, expected_capture = capture, skip_refresh = true,
+                        quiet_active = true, quiet_missing = true, quiet_delete_failed = true,
+                    })
+                    if ok then removed = removed + 1 else failed = failed + 1 end
+                else failed = failed + 1 end
+            end
+            self.local_download_selection = {}
+            self:showLocalDownloads(true, true)
+            self:showMessage(I18n.f("Deleted %1 local downloads; %2 skipped or failed.", removed, failed))
+            self:refreshDownloadsMenu()
+        end,
+    })
+    return true
+end
 
 local function cancellationFailureMessage(state)
     if state == "store_blocked" or (type(state) == "string" and state:match("^ambiguous_post_replacement")) then
@@ -72,6 +177,10 @@ function Methods:getDownloadsTitleActions(snapshot)
     if #(snapshot.failed or {}) > 0 then
         table.insert(actions, { id = "clear_failed", text = I18n.t("Clear failed") })
     end
+    table.insert(actions, snapshot.paused
+        and { id = "resume_all", text = I18n.t("Resume all downloads") }
+        or { id = "pause_all", text = I18n.t("Pause all downloads") })
+    table.insert(actions, { id = "local_downloads", text = I18n.t("On-device downloads") })
 
     return actions
 end
@@ -83,7 +192,16 @@ function Methods:performDownloadsTitleAction(action, menu)
     end
 
     local queue = self:getDownloadQueue()
-    if action.id == "cancel_all" then
+    if action.id == "local_downloads" then
+        self:showLocalDownloads()
+        return true
+    elseif action.id == "pause_all" or action.id == "resume_all" then
+        if self.suwayomi_host_retired then return false end
+        local ok, err = queue:setPaused(action.id == "pause_all")
+        if not ok then self:showMessage(I18n.f("Could not update download pause state: %1", err or "unknown")) end
+        self:refreshDownloadsMenu()
+        return ok
+    elseif action.id == "cancel_all" then
         local callback = function()
             local _count, err = queue:cancelAll()
             if err and self.showMessage then
@@ -286,6 +404,15 @@ function Methods:getDownloadsMenuCallbacks(view)
         return current ~= nil and current.revision == request.revision
     end
     return {
+        onLocalDownloads = self.showLocalDownloads and function()
+            if live() then return self:showLocalDownloads() end
+        end or nil,
+        onPauseDownloads = function()
+            if live() then
+                local queue = self:getDownloadQueue()
+                return self:performDownloadsTitleAction({ id = queue:isPaused() and "resume_all" or "pause_all" })
+            end
+        end,
         refill_is_current = refill_is_current,
         retry_refill = function(request)
             if not refill_is_current(request) then return false end

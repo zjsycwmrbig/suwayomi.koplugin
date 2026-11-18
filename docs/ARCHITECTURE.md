@@ -26,7 +26,7 @@ Use this map before broad searches. Directory-qualified paths are relative to th
 | Download service and refill | `suwayomi/downloads/service.lua` owns the process singleton, subscriptions, checked completion, refill, and shared quit integration. `refill.lua` owns request/origin persistence, one context helper, automatic admission, and guarded Retry/Stop. `cleanup_adapter.lua` gives finished cleanup a process-owned receiver with current-reader lookup. |
 | Download queue and workers | **Facade** `suwayomi/downloads/queue.lua` is the single owner of pending jobs, attempts, statuses, and recovery. `lifecycle.lua` supplies private scheduling/progress/retry methods on that same receiver, not another state owner. Explicit inspection retains its distinct lifecycle. `job_store.lua`, `progress_file.lua`, and `status_formatter.lua` own persisted jobs, attempt progress IO, and status text. |
 | Archive transfer and validation | `suwayomi/downloads/downloader.lua` obtains pages/archives and publishes validated CBZs. `archive.lua` owns attempt IDs, ZIP inspection/checksums, embedded metadata, and observational fingerprints. |
-| Download UI and directory | `suwayomi/downloads/controller.lua` owns active/queued/failed actions, error/repair flows, and optional global finish-marking setup after explicit Download-ahead selection; `suwayomi/ui/downloads.lua` renders them. `suwayomi/downloads/directory.lua` handles choosing/persisting destinations through `suwayomi/ui/directory.lua`. |
+| Download UI and directory | `suwayomi/downloads/controller.lua` owns queue actions, global pause controls, local inventory selection/batch removal, error/repair flows, and optional finish-marking setup; `suwayomi/ui/downloads.lua` renders them. `local_library.lua` observationally collects recorded files and bounded CBZ directory entries without archive inspection or identity adoption. `directory.lua` handles choosing/persisting destinations through `suwayomi/ui/directory.lua`. |
 | Manual archive removal | `suwayomi/chapters/manual_deletion.lua` owns generation-bound admission, revocation, processing/recovery, and snapshots. `archive_identity.lua` supplies filesystem evidence, containment/alias checks, and live-reader protection. |
 | Local downloads and removal | `suwayomi/chapters/local_downloads.lua` owns recorded-path chapter reconstruction, record association, applicable read-entry selection, record-derived read authority, local existence/open helpers, and metadata-before-archive removal. Its synchronous lookup borrows the menu's working ledger; callers pass the lookup opaquely. `delete_actions.lua` coordinates guarded removal/bookkeeping. `finished_cleanup.lua` owns finish order, retention positions, retries, and immutable target snapshots. |
 | Read state and metadata | **Facade** `suwayomi/readsync/controller.lua` schedules sync/reconciliation and completed-close enrollment. `ledger.lua` owns read merging and checked read/manual-intent/refill transaction composition; `worker.lua` owns remote sync, and `koreader_metadata.lua` owns KOReader sidecar metadata. |
@@ -54,6 +54,13 @@ Explicit inspection waits for confirmed worker exit before persistence and callb
 
 ## Download ahead
 
+Global pause persists `downloads_paused` in the existing checked document. The
+queue requeues active supported jobs before terminating attempts through normal
+reconciliation. Paused scheduling still reaps stopping workers and commits late
+complete publications, but launches no new transfers. Resume preserves jobs,
+destinations, retry budgets, and future deadlines. Startup honors pause. Automatic
+refill may admit jobs while paused; execution remains held by the queue.
+
 [ADR-0004](adr/0004-durable-download-ahead-refill.md) owns refill policy and request persistence. The service stores one revisioned request per manga with verified endpoint association, not proposed chapter candidates. Completed close, manual read/unread, actual reconciliation, successful chapter context publication, and policy/filter changes can enroll work. Rendering and queue progress cannot. Enrollment shares the checked read/intent transaction; admission and consumption of the matching request revision also commit together.
 
 One process-owned helper obtains complete chapter context. Before admission, refill rechecks endpoint, policy, exact saved scanlator, destination, read/pending-sync state, queue ownership, and manual-deletion fences. Owned and terminal-failed chapters occupy the earliest 5/10/50 unread positions; automatic refill neither backfills beyond the limit nor retries terminal failure. A stale fetch cannot consume a newer request. Explicit cancellation retires the matching evaluation; Stop turns the policy Off and retires requests without deleting admitted jobs. Transient retries have persisted deadlines; configuration and identity blockers remain inspectable.
@@ -63,6 +70,17 @@ Existing archives and unknown legacy records do not acquire a current-server ori
 The optional KOReader auto-mark prompt follows an explicit nonzero policy choice. Only Enable or Keep disabled with Don't ask again checked retires it, after a successful plugin setting save. Enable changes KOReader's global preference only after that save. Native Back/outside dismissal ignores the checkbox and leaves the prompt eligible.
 
 ## Manual deletion and retention
+
+The Downloads inventory has an explicit cross-manga ordinary-Delete surface.
+It observes recorded paths and bounded configured-root CBZs, omits symlinks and
+partials, deduplicates paths, and exposes record conflicts. Read cleanup uses only
+matching ledger read state, honoring pending unread. Selection is in-memory.
+Confirmation captures filesystem evidence and observed generation; acceptance
+rechecks membership/read choice, job-key and path ownership, root, generation,
+and file evidence before the ordinary deletion owner revalidates and removes
+sidecars/archive. Unregistered files gain no server identity. Out-of-root recorded
+files stay visible but cannot be removed here. Directory access/limit failures
+report an incomplete list. This is independent of archive-only manual read intent.
 
 [ADR-0003](adr/0003-durable-manual-delete-intent.md) owns archive-only manual intent. The service records a captured path, root, archive generation, revision, and retry state. Queued, active, stopping, or finalizing download ownership blocks acceptance without canceling work. Read state and accepted intent commit before unlink. Immediately before removal, the processor rechecks revision, generation, containment and aliases, filesystem evidence, live reader, and download ownership. An uncertain target or unsupported identity leaves the archive intact; accepted manual removal leaves KOReader metadata intact.
 
@@ -107,6 +125,10 @@ The chapter title menu exposes Select chapters as well as Select all. Empty
 selection remains active until explicitly cleared or changing manga. Row taps
 toggle exact identities across pages; selected downloads reuse the existing
 bounded, context-checked batch admission and include read chapters.
+Range selection captures the first row key, then adds the inclusive interval to
+the second row in the current filtered order without clearing previous choices.
+It works in reverse and across pages, then returns to individual toggling. Manga
+or filter changes clear range state through the existing selection reset.
 
 [ADR-0001](adr/0001-manual-mark-read-coordination.md) owns single, selected, previous, and unread action ordering. Chapter context owns filtering and selection; actions dispatch commands; read actions capture targets before menu or metadata changes. The ledger enrolls refill against the previous read state, then merges read choices and applies manual-intent admission/revocation in one checked save. Confirmed results return independent deletion targets without mutating the captures; deferred completion preserves the committed archive generation. Failed or uncertain saves return no targets and start no removal. Selected batches reconcile visible non-target entries before commit; singles publish before refresh. After a successful commit, captured completions publish in order, then manual processing and sync run. KOReader sidecar writes and remote sync are outside that transaction.
 

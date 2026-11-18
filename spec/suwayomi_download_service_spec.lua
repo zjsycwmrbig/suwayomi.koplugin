@@ -223,6 +223,151 @@ describe("process-owned download navigation", function()
         clear()
     end)
 
+    it("pauses active workers durably and resumes their preserved chapter jobs after exit", function()
+        local plugin = host("files")
+        local queue = plugin:getDownloadQueue()
+        for _, chapter in ipairs(chapters) do assert(queue:enqueue(manga, chapter, directory)) end
+        advance(0)
+        local active = queue:getActiveJob("m1:c1")
+        assert(plugin:performDownloadsTitleAction({ id = "pause_all" }))
+        assert.is_true(queue:getSnapshot().paused)
+        assert.equals(4, #queue:loadPersistentJobs())
+        assert.equals(4, #queue:getSnapshot().queued)
+        assert.is_true(workers[active.pid].terminated)
+        advance(3)
+        assert.equals(2, #workers)
+        for _, worker in ipairs(workers) do worker.alive = false end
+        advance(1)
+        assert.equals(0, queue:getActiveCount())
+        assert.equals(2, #workers)
+        local Queue = require("suwayomi/downloads/queue")
+        local restarted = Queue:new{ settings = settings, downloader = queue.downloader, ui_manager = ui, ffi_util = queue.ffi_util }
+        assert.is_true(restarted:isPaused())
+        assert(restarted:recover())
+        restarted:process()
+        assert.equals(0, restarted:getActiveCount())
+        assert(plugin:performDownloadsTitleAction({ id = "resume_all" }))
+        assert.is_false(queue:isPaused())
+        assert.equals(2, queue:getActiveCount())
+        assert.equals(4, #queue:loadPersistentJobs())
+        assert.equals(4, #workers)
+    end)
+
+    it("does not stop workers or report paused when the pause setting cannot be saved", function()
+        local plugin = host("files")
+        local queue = plugin:getDownloadQueue()
+        assert(queue:enqueue(manga, chapters[1], directory))
+        advance(0)
+        local active = queue:getActiveJob("m1:c1")
+        local store, save = settings:getStore(), settings:getStore().saveDocument
+        store.saveDocument = function() return nil, "injected_save_failure" end
+        local ok, reason = queue:setPaused(true)
+        store.saveDocument = save
+        assert.is_nil(ok)
+        assert.equals("injected_save_failure", reason)
+        assert.is_false(queue:isPaused())
+        assert.is_nil(workers[active.pid].terminated)
+        assert.equals(active, queue:getActiveJob("m1:c1"))
+    end)
+
+    it("commits a late completed archive while paused without restarting the transfer", function()
+        local plugin = host("files")
+        local queue = plugin:getDownloadQueue()
+        assert(queue:enqueue(manga, chapters[1], directory))
+        advance(0)
+        local active = queue:getActiveJob("m1:c1")
+        assert(queue:setPaused(true))
+        local path = publishArchive(active, true)
+        workers[active.pid].alive = false
+        advance(1)
+        assert.is_true(queue:isPaused())
+        assert.equals(1, #workers)
+        assert.equals(0, #queue:loadPersistentJobs())
+        assert.equals(path, settings:loadChapterLedger()["m1:c1"].path)
+        assert.is_not_nil(read(path))
+    end)
+
+    it("manages all local CBZs and rechecks read choices before confirmed batch deletion", function()
+        local plugin = host("files")
+        local a, b, orphan = directory .. "/c1.cbz", directory .. "/c2.cbz", directory .. "/orphan.cbz"
+        write(a, "read chapter"); write(b, "unread chapter"); write(orphan, "unregistered chapter")
+        assert(settings:getStore():saveDocument(function(doc)
+            doc.chapter_ledger = {
+                ["m1:c1"] = { manga_id = "m1", chapter_id = "c1", path = a, read = true, endpoint_scope = server_url },
+                ["m1:c2"] = { manga_id = "m1", chapter_id = "c2", path = b, read = false, endpoint_scope = server_url },
+            }
+        end))
+        local confirm
+        require("suwayomi/ui").showConfirm = function(options) confirm = options.ok_callback end
+        local menu = plugin:showLocalDownloads()
+        assert.equals(3, #menu.item_table)
+        assert(plugin:confirmLocalDownloadDeletion("delete_read", menu))
+        assert(settings:getStore():saveDocument(function(doc) doc.chapter_ledger["m1:c1"].read = false end))
+        confirm()
+        assert.equals("read chapter", read(a))
+        assert(settings:getStore():saveDocument(function(doc) doc.chapter_ledger["m1:c1"].read = true end))
+        plugin:showLocalDownloads(true, true)
+        assert(plugin:confirmLocalDownloadDeletion("delete_read", menu))
+        confirm()
+        assert.is_nil(read(a))
+        assert.equals("unread chapter", read(b))
+        assert.equals("unregistered chapter", read(orphan))
+        assert.is_true(settings:loadChapterLedger()["m1:c1"].read)
+        assert.is_nil(settings:loadChapterLedger()["m1:c1"].path)
+        plugin.local_download_selection[orphan] = true
+        assert(plugin:confirmLocalDownloadDeletion("delete_selected", menu))
+        confirm()
+        assert.is_nil(read(orphan))
+        assert.equals("unread chapter", read(b))
+        assert.is_nil(settings:loadChapterLedger()["local:" .. orphan])
+        local row = plugin.current_local_downloads_menu.item_table[1]
+        assert.is_nil(plugin.local_download_selection[b])
+        row.callback()
+        assert.is_true(plugin.local_download_selection[b])
+        assert.is_truthy(plugin.current_local_downloads_menu.item_table[1].text:find("[x]", 1, true))
+    end)
+
+    it("keeps a file replaced after batch deletion confirmation was opened", function()
+        local plugin = host("files")
+        local path = directory .. "/orphan.cbz"
+        write(path, "original")
+        local confirm
+        require("suwayomi/ui").showConfirm = function(options) confirm = options.ok_callback end
+        local menu = plugin:showLocalDownloads()
+        plugin.local_download_selection[path] = true
+        assert(plugin:confirmLocalDownloadDeletion("delete_selected", menu))
+        write(path, "replacement with different bytes")
+        confirm()
+        assert.equals("replacement with different bytes", read(path))
+    end)
+
+    it("preserves the currently open document during global local-file removal", function()
+        local path = directory .. "/c1.cbz"
+        write(path, "current document")
+        local plugin = host("reader", path)
+        local confirm
+        require("suwayomi/ui").showConfirm = function(options) confirm = options.ok_callback end
+        local menu = plugin:showLocalDownloads()
+        assert(plugin:confirmLocalDownloadDeletion("delete_all", menu))
+        confirm()
+        assert.equals("current document", read(path))
+    end)
+
+    it("does not delete an unregistered archive targeted by an active download", function()
+        local plugin = host("files")
+        local queue = plugin:getDownloadQueue()
+        assert(queue:enqueue(manga, chapters[1], directory))
+        advance(0)
+        local path = directory .. "/c1.cbz"
+        write(path, "published but not yet registered")
+        local menu = plugin:showLocalDownloads()
+        assert.equals(1, #menu.item_table)
+        assert.is_true(queue:isArchivePathBusy(path))
+        plugin.local_download_selection[path] = true
+        assert.is_false(plugin:confirmLocalDownloadDeletion("delete_selected", menu))
+        assert.equals("published but not yet registered", read(path))
+    end)
+
     for _, limit in ipairs({ 2, 1 }) do
     it("keeps workers, progress and rendered rows through both navigation routes at concurrency " .. limit, function()
         assert(settings:saveMaxParallelChapterDownloads(limit))

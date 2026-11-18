@@ -118,6 +118,22 @@ function Methods:deleteChapterFromDeviceWithOptions(manga, chapter, options)
         end
         target = options.archive_target
     else
+        if options.expected_capture then
+            local captured = options.expected_capture
+            if not captured.target or captured.key ~= queue:getKey(manga, chapter)
+                or captured.target.path ~= chapter_path
+                or captured.target.root ~= SuwayomiSettings:loadDownloadDirectory() then
+                return false, "blocked", "target_changed"
+            end
+            local identity = require("suwayomi/chapters/archive_identity")
+            if not identity.inspect(chapter_path, captured.target.root, captured.target.evidence) then
+                return false, "blocked", "identity_changed"
+            end
+            local current = removal:capture(captured.key, chapter_path, captured.target.root)
+            if current.reason or current.observed_generation ~= captured.observed_generation then
+                return false, "blocked", "generation_changed"
+            end
+        end
         target, target_error = removal:prepareRemoval(
             queue:getKey(manga, chapter), chapter_path, SuwayomiSettings:loadDownloadDirectory()
         )

@@ -191,6 +191,7 @@ function Lifecycle:runDownloaderJob(queued)
 end
 
 function Lifecycle:startQueuedJob(queued)
+    if self:isPaused() then return false, "paused" end
     if self and self.checkStoreFence and not self:checkStoreFence() then
         return false
     end
@@ -276,6 +277,10 @@ function Lifecycle:process()
     local started_count = 0
     local earliest_retry_at
     self:reapStoppingJobs()
+    if self:isPaused() then
+        self:schedulePoll()
+        return
+    end
     -- Stopping workers reserve their own slots, not every available slot.
     if next(self.stopping_jobs) then
         earliest_retry_at = self.now() + 1
