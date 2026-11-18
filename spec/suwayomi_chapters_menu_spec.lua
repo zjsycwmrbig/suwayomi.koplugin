@@ -320,6 +320,59 @@ describe("suwayomi/chapters/menu", function()
         assert.is_nil(action_ids.mark_through_read)
     end)
 
+    it("filters download-manager chapter rows while preserving read actions", function()
+        helper.stubControllerDependencies()
+        package.loaded["suwayomi/chapters/menu"] = nil
+        local ChapterMenu = require("suwayomi/chapters/menu")
+        local built
+        local plugin = {
+            download_manager_filter = "undownloaded",
+            current_chapter_context = { manga = { id = "m1" }, chapters = {} },
+        }
+        for name, method in pairs(ChapterMenu.methods) do
+            plugin[name] = method
+        end
+        function plugin:getVisibleChapters(chapters) return chapters end
+        function plugin:loadChapterLedger() return {} end
+        function plugin:buildChapterDownloadLookup() return {} end
+        function plugin:prepareChapterMenuItems(_, chapters)
+            return {
+                { chapter = chapters[1], status = { state = "downloaded" } },
+                { chapter = chapters[2], status = { state = "failed" } },
+                { chapter = chapters[3], status = { state = "read" } },
+                { chapter = chapters[4], status = { state = "queued" } },
+            }
+        end
+        function plugin:buildChapterMenuItems(_, prepared)
+            built = prepared
+            return prepared
+        end
+        function plugin:getChapterTitleBarMenuOptions()
+            return {}
+        end
+        function plugin:formatChapterListScreenTitle()
+            return "Chapters"
+        end
+        function plugin:isChapterDownloaded() return false end
+        function plugin:getChapterDownloadStatus() return nil end
+
+        plugin:buildChapterMenuOptions({ id = "m1" }, {
+            { id = "downloaded" },
+            { id = "failed" },
+            { id = "undownloaded", is_read = false },
+            { id = "queued" },
+        }, {})
+
+        assert.are.equal(1, #built)
+        assert.are.equal("undownloaded", built[1].chapter.id)
+        local action_ids = {}
+        for _, action in ipairs(plugin:getChapterActions({ id = "m1" }, built[1].chapter)) do
+            action_ids[action.id] = true
+        end
+        assert.is_true(action_ids.mark_read)
+        assert.is_true(action_ids.mark_previous_read)
+    end)
+
     it("keeps damaged and unverified local archives visible with distinct recovery actions", function()
         helper.stubControllerDependencies()
         package.loaded["suwayomi/chapters/menu"] = nil

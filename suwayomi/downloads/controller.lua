@@ -23,6 +23,25 @@ end
 
 local Methods = {}
 
+function Methods:getDownloadsSnapshot(force_inventory)
+    local snapshot = self:getDownloadQueue():getSnapshot()
+    local task_count = #(snapshot.active or {}) + #(snapshot.queued or {}) + #(snapshot.failed or {})
+    local scan_inventory = force_inventory == true
+        or self.local_download_items == nil
+        or task_count ~= self.downloads_inventory_task_count
+    if scan_inventory then
+        local ok_inventory, local_items = pcall(function()
+            return require("suwayomi/downloads/local_library").collect(SuwayomiSettings)
+        end)
+        if ok_inventory then self.local_download_items = local_items or {} end
+        self.downloads_inventory_task_count = task_count
+    end
+    if self.local_download_items and #self.local_download_items > 0 then
+        snapshot.local_downloads = self.local_download_items
+    end
+    return snapshot
+end
+
 function Methods:showLocalDownloads(refresh, rescan)
     if self.suwayomi_host_retired then return false end
     local previous = self.current_local_downloads_menu
@@ -259,6 +278,10 @@ end
 
 function Methods:getDownloadsMenuOptions(snapshot)
     local options = self:getDownloadsTitleBarOptions(snapshot)
+    options.title = I18n.t("Downloads")
+    local ok_credentials, credentials = pcall(function() return SuwayomiSettings:load() end)
+    options.thumbnail_credentials = ok_credentials and credentials or nil
+    options.view_mode = "cover_text"
     if self.getDownloadDirectorySummary then
         options.download_directory_summary = self:getDownloadDirectorySummary()
     else
@@ -378,7 +401,9 @@ end
 
 function Methods:showFailedDownloadActions(job, menu)
     return self:showDownloadJobError(job, function()
-        return not self.suwayomi_host_retired and (not menu or self.current_downloads_menu == menu)
+        return not self.suwayomi_host_retired and (not menu
+            or self.current_downloads_menu == menu
+            or self.current_download_manga_menu == menu)
     end)
 end
 
@@ -394,7 +419,8 @@ function Methods:getDownloadsMenuCallbacks(view)
     view = view or self.current_downloads_menu
     local function live()
         local menu = type(view) == "function" and view() or view
-        return not self.suwayomi_host_retired and menu ~= nil and self.current_downloads_menu == menu
+        return not self.suwayomi_host_retired and menu ~= nil
+            and (self.current_downloads_menu == menu or self.current_download_manga_menu == menu)
             and (not self.isSuwayomiScreenActive or self:isSuwayomiScreenActive(menu))
             and (not self.suwayomi_navigation or self.suwayomi_navigation:isCurrent(menu))
     end
@@ -465,9 +491,10 @@ function Methods:refreshDownloadsMenu()
         return false
     end
 
-    local queue = self:getDownloadQueue()
-    local snapshot = queue:getSnapshot()
+    local snapshot = self:getDownloadsSnapshot()
     local options = self:getDownloadsMenuOptions(snapshot)
+    options.grouped_by_manga = true
+    options.bottom_navigation = self.getBottomNavigation and self:getBottomNavigation("downloads")
     SuwayomiUI.updateDownloadsMenu(menu, snapshot, self:getDownloadsMenuCallbacks(), options)
     return true
 end
@@ -538,19 +565,161 @@ end
 
 
 function Methods:showDownloads()
-    local queue = self:getDownloadQueue()
-    local snapshot = queue:getSnapshot()
+    local snapshot = self:getDownloadsSnapshot(true)
     local options, trackMenu = self:withDownloadsMenuTracking(self:getDownloadsMenuOptions(snapshot))
     options.bottom_navigation = self.getBottomNavigation and self:getBottomNavigation("downloads")
+    options.grouped_by_manga = true
 
     local menu
     local callbacks = self:getDownloadsMenuCallbacks(function() return menu end)
+    callbacks.onSelectManga = function(group)
+        if not menu or self.current_downloads_menu ~= menu then return false end
+        return self:showDownloadMangaGroup(group)
+    end
     menu = SuwayomiUI.showDownloadsMenu(snapshot, callbacks, options)
     trackMenu(menu)
     if self.trackSuwayomiScreen then
         self:trackSuwayomiScreen("downloads", menu)
     end
     return menu
+end
+
+function Methods:showDownloadMangaGroup(group)
+    if not group or not SuwayomiUI.showDownloadMangaDetail then return false end
+    for _, current in ipairs(SuwayomiUI.groupDownloadJobs(self:getDownloadsSnapshot())) do
+        if current.key == group.key then
+            group = current
+            break
+        end
+    end
+    local title_options = self:getDownloadsMenuOptions(self:getDownloadQueue():getSnapshot())
+    local detail
+    detail = SuwayomiUI.showDownloadMangaDetail(group, {
+        onFilter = function(current_group, filter, detail_menu)
+            if detail_menu ~= detail or not current_group.manga then return false end
+            self:closeMenu(detail_menu)
+            return self:showDownloadChaptersForManga(current_group.manga, filter)
+        end,
+        onDownloadUndownloaded = function(current_group, detail_menu)
+            if detail_menu ~= detail or not current_group.manga then return false end
+            self:closeMenu(detail_menu)
+            return self:confirmDownloadAllChaptersForManga(current_group.manga)
+        end,
+        onSelectJob = function(job, detail_menu)
+            if detail_menu ~= detail then return false end
+            if job.state == "failed" then
+                return self:showFailedDownloadActions(job, detail_menu)
+            elseif job.state == "downloading" then
+                return self:showActiveDownloadActions(job, detail_menu)
+            end
+            return self:showQueuedDownloadActions(job, detail_menu)
+        end,
+        onSelectRefill = function(request, detail_menu)
+            if detail_menu ~= detail or not SuwayomiUI.showDownloadRefillDetails then return false end
+            SuwayomiUI.showDownloadRefillDetails(request, self:getDownloadsMenuCallbacks(detail_menu))
+            return true
+        end,
+        onTogglePause = function(current_group, detail_menu)
+            if detail_menu ~= detail then return false end
+            local paused = current_group.paused ~= true
+            local ok, err = self:getDownloadQueue():setMangaPaused(current_group.manga, paused)
+            if not ok then
+                self:showMessage(I18n.f("Could not update manga download state: %1", err or "unknown"))
+                return false
+            end
+            self:closeMenu(detail_menu)
+            self:showDownloads()
+            return true
+        end,
+        onCancelTasks = function(current_group, detail_menu)
+            if detail_menu ~= detail then return false end
+            return self:confirmCancelMangaDownloadTasks(current_group, detail_menu)
+        end,
+        onDeleteDownloads = function(current_group, detail_menu)
+            if detail_menu ~= detail then return false end
+            return self:confirmDeleteMangaDownloads(current_group, detail_menu)
+        end,
+    }, {
+        title_bar_left_icon = title_options.title_bar_left_icon,
+        bottom_navigation = self.getBottomNavigation and self:getBottomNavigation("downloads"),
+        on_title_bar_left_tap = function(detail_menu)
+            self:closeMenu(detail_menu)
+            self:showDownloads()
+        end,
+        close_callback = function()
+            if self.current_download_manga_menu == detail then self.current_download_manga_menu = nil end
+        end,
+    })
+    self.current_download_manga_menu = detail
+    if detail and self.trackSuwayomiScreen then
+        self:trackSuwayomiScreen("downloads-manga", detail)
+    end
+    return detail
+end
+
+function Methods:confirmCancelMangaDownloadTasks(group, menu)
+    local targets = {}
+    for _, job in ipairs(group and group.jobs or {}) do
+        if job.state == "downloading" or job.state == "queued" then
+            targets[#targets + 1] = job
+        end
+    end
+    if #targets == 0 then
+        self:showMessage(I18n.t("This manga has no active or queued download tasks."))
+        return false
+    end
+    SuwayomiUI.showConfirm({
+        text = I18n.f("Cancel %1 active or queued chapter downloads for this manga?", #targets),
+        ok_text = I18n.t("Cancel downloads"),
+        cancel_text = I18n.t("Keep downloading"),
+        ok_callback = function()
+            if self.suwayomi_host_retired or self.current_download_manga_menu ~= menu then return end
+            local queue = self:getDownloadQueue()
+            local cancelled, failed = 0, 0
+            for _, job in ipairs(targets) do
+                local ok = job.manga and job.chapter and queue:cancelPending(job.manga, job.chapter)
+                if ok then cancelled = cancelled + 1 else failed = failed + 1 end
+            end
+            self:closeMenu(menu)
+            self:showDownloads()
+            self:showMessage(I18n.f("Cancelled %1 downloads; %2 could not be cancelled.", cancelled, failed))
+        end,
+    })
+    return true
+end
+
+function Methods:confirmDeleteMangaDownloads(group, menu)
+    local targets = {}
+    for _, job in ipairs(group and group.jobs or {}) do
+        if job.state == "downloaded" and job.local_item then targets[#targets + 1] = job.local_item end
+    end
+    if #targets == 0 then
+        self:showMessage(I18n.t("This manga has no downloaded chapters to delete."))
+        return false
+    end
+    SuwayomiUI.showConfirm({
+        text = I18n.f("Delete %1 downloaded chapter files for this manga? Server chapters and read state stay unchanged.", #targets),
+        ok_text = I18n.t("Delete downloads"),
+        cancel_text = I18n.t("Cancel"),
+        ok_callback = function()
+            if self.suwayomi_host_retired or self.current_download_manga_menu ~= menu then return end
+            local queue = self:getDownloadQueue()
+            local deleted, failed = 0, 0
+            for _, item in ipairs(targets) do
+                local ok = item.manga and item.chapter
+                    and not queue:isArchivePathBusy(item.path)
+                    and self:deleteChapterFromDeviceWithOptions(item.manga, item.chapter, {
+                        chapter_path = item.path, skip_refresh = true,
+                        quiet_active = true, quiet_missing = true, quiet_delete_failed = true,
+                    })
+                if ok then deleted = deleted + 1 else failed = failed + 1 end
+            end
+            self:closeMenu(menu)
+            self:showDownloads()
+            self:showMessage(I18n.f("Deleted %1 downloads; %2 could not be deleted.", deleted, failed))
+        end,
+    })
+    return true
 end
 
 

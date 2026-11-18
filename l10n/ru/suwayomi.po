@@ -63,6 +63,18 @@ msgstr[1] ""
 msgstr[2] ""
 "%1 загрузок заняты. После их завершения снова отметьте главы прочитанными."
 
+#, fuzzy
+msgid "%1 downloaded"
+msgstr "Скачано"
+
+#, fuzzy
+msgid "%1 downloading"
+msgstr "Не отменять загрузки"
+
+#, fuzzy
+msgid "%1 failed"
+msgstr "ошибка"
+
 msgid "%1 failed for %2"
 msgstr "%1: ошибка для %2"
 
@@ -81,6 +93,10 @@ msgid_plural ""
 msgstr[0] "Доступна ещё %1 глава. Повторите это действие, чтобы скачать её."
 msgstr[1] "Доступны ещё %1 главы. Повторите это действие, чтобы скачать их."
 msgstr[2] "Доступно ещё %1 глав. Повторите это действие, чтобы скачать их."
+
+#, fuzzy
+msgid "%1 queued"
+msgstr "В очереди"
 
 msgid "%1 result"
 msgid_plural "%1 results"
@@ -102,6 +118,12 @@ msgid_plural "%1 selected chapters"
 msgstr[0] "%1 выбранная глава"
 msgstr[1] "%1 выбранные главы"
 msgstr[2] "%1 выбранных глав"
+
+msgid "%1 task"
+msgid_plural "%1 tasks"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
 
 msgid "1 selected"
 msgid_plural "%1 selected"
@@ -132,6 +154,10 @@ msgstr "Библиотека"
 msgid "Actions"
 msgstr "Действия"
 
+#, fuzzy
+msgid "Active downloads"
+msgstr "Отменить загрузки"
+
 msgid "Add chapter range"
 msgstr ""
 
@@ -140,6 +166,13 @@ msgstr "Добавить в библиотеку"
 
 msgid "Adding to library..."
 msgstr "Добавление в библиотеку..."
+
+msgid "Adds missing chapters in batches of up to 50."
+msgstr ""
+
+#, fuzzy
+msgid "All chapters"
+msgstr "%1 выбранная глава"
 
 msgid "All manga"
 msgstr "Вся манга"
@@ -321,11 +354,17 @@ msgstr "Массовые загрузки"
 msgid "Cancel"
 msgstr "Отмена"
 
+msgid "Cancel %1 active or queued chapter downloads for this manga?"
+msgstr ""
+
 msgid "Cancel all downloads"
 msgstr "Отменить все загрузки"
 
 msgid "Cancel all downloads?"
 msgstr "Отменить все загрузки?"
+
+msgid "Cancel all tasks for this manga"
+msgstr ""
 
 msgid "Cancel download"
 msgstr "Отменить загрузку"
@@ -341,6 +380,9 @@ msgstr "Отменить загрузку в очереди"
 
 msgid "Cancel search"
 msgstr "Отменить поиск"
+
+msgid "Cancelled %1 downloads; %2 could not be cancelled."
+msgstr ""
 
 msgid "Cannot cancel download: storage is ambiguous"
 msgstr "Нельзя отменить загрузку: состояние хранилища не определено"
@@ -681,6 +723,10 @@ msgstr "Не удалось изменить автозагрузку: %1"
 msgid "Could not update library."
 msgstr "Не удалось обновить библиотеку."
 
+#, fuzzy
+msgid "Could not update manga download state: %1"
+msgstr "Не удалось изменить автозагрузку: %1"
+
 msgid "Could not verify download"
 msgstr "Не удалось проверить загрузку"
 
@@ -695,8 +741,16 @@ msgstr ""
 msgid "Cover with text"
 msgstr "Текст поиска"
 
+msgid "Current active chapter finishes; queued chapters wait."
+msgstr ""
+
 msgid "Delete"
 msgstr "Удалить"
+
+msgid ""
+"Delete %1 downloaded chapter files for this manga? Server chapters and read "
+"state stay unchanged."
+msgstr ""
 
 msgid ""
 "Delete %1 local chapter files and their KOReader sidecars? This cannot be "
@@ -732,6 +786,10 @@ msgstr "Удалить файлы прочитанных глав"
 msgid "Delete chapter settings are unavailable."
 msgstr "Настройки удаления глав недоступны."
 
+#, fuzzy
+msgid "Delete downloaded chapters for this manga"
+msgstr "Скачанные главы находятся в %1."
+
 msgid "Delete downloaded file for %1 from this device?"
 msgstr "Удалить скачанный файл для %1 с этого устройства?"
 
@@ -760,6 +818,9 @@ msgstr "Удалить файлы прочитанных глав"
 
 msgid "Delete when marked read: %1"
 msgstr "Удалять после отметки «Прочитано»: %1"
+
+msgid "Deleted %1 downloads; %2 could not be deleted."
+msgstr ""
 
 msgid "Deleted %1 local downloads; %2 skipped or failed."
 msgstr ""
@@ -791,6 +852,10 @@ msgid ""
 "Download belongs to a different server. Restore the original server in "
 "Connection settings, then Retry."
 msgstr ""
+
+#, fuzzy
+msgid "Download chapter filter"
+msgstr "Сначала скачайте главу."
 
 msgid "Download damaged; redownload"
 msgstr "Загрузка повреждена; скачайте заново"
@@ -868,6 +933,10 @@ msgstr ""
 msgid "Download the chapter first."
 msgstr "Сначала скачайте главу."
 
+#, fuzzy
+msgid "Download undownloaded chapters"
+msgstr "Не удалось скачать главу заново."
+
 msgid "Download unread (up to 50)"
 msgstr "Скачать непрочитанные (до 50)"
 
@@ -885,6 +954,10 @@ msgstr "Скачивание %1"
 
 msgid "Downloading %1/%2"
 msgstr "Скачивание %1/%2"
+
+#, fuzzy
+msgid "Downloading or queued"
+msgstr "Загрузка больше не в очереди."
 
 msgid "Downloads"
 msgstr "Загрузки"
@@ -963,6 +1036,10 @@ msgstr "Истекло время ожидания обновления расш
 msgid "Failed"
 msgstr "Ошибка"
 
+#, fuzzy
+msgid "Failed downloads"
+msgstr "Отменить загрузки"
+
 msgid "Failed to queue %1 chapter download."
 msgid_plural "Failed to queue %1 chapter downloads."
 msgstr[0] "Не удалось добавить в очередь %1 загрузку главы."
@@ -983,6 +1060,10 @@ msgstr "Фильтр"
 
 msgid "Filter name"
 msgstr "Название фильтра"
+
+#, fuzzy
+msgid "Filter: %1"
+msgstr "Фильтр"
 
 msgid "Finishing and deletion"
 msgstr "Завершение чтения и удаление"
@@ -1229,6 +1310,10 @@ msgstr "Следующая попытка: %1"
 msgid "No actions available"
 msgstr "Нет доступных действий"
 
+#, fuzzy
+msgid "No active download tasks"
+msgstr "Отменить загрузки"
+
 msgid "No chapters available to download."
 msgstr "Нет глав для скачивания."
 
@@ -1245,6 +1330,10 @@ msgid ""
 msgstr ""
 "Нет глав, соответствующих сохранённому фильтру сканлейторов. Другие "
 "сканлейторы не выбраны."
+
+#, fuzzy
+msgid "No chapters match this filter."
+msgstr "Нет манги, соответствующей этим фильтрам."
 
 msgid "No chapters selected."
 msgstr "Главы не выбраны."
@@ -1274,6 +1363,10 @@ msgstr "Подробности ошибки не сохранены."
 #, fuzzy
 msgid "No local chapter archives found."
 msgstr "Скачанные главы находятся в %1."
+
+#, fuzzy
+msgid "No manga download tasks."
+msgstr "Новые загрузки не добавлены в очередь."
 
 msgid "No manga in this library category."
 msgstr "В этой категории библиотеки нет манги."
@@ -1404,6 +1497,10 @@ msgstr "Пароль"
 msgid "Pause all downloads"
 msgstr "Отменить все загрузки"
 
+#, fuzzy
+msgid "Pause downloads for this manga"
+msgstr "Отменить все загрузки"
+
 msgid "Paused"
 msgstr ""
 
@@ -1434,6 +1531,10 @@ msgid_plural "Queued %1 selected chapter downloads."
 msgstr[0] "В очередь добавлена %1 выбранная глава."
 msgstr[1] "В очередь добавлены %1 выбранные главы."
 msgstr[2] "В очередь добавлено %1 выбранных глав."
+
+#, fuzzy
+msgid "Queued downloads"
+msgstr "Удалить загрузки"
 
 msgid "Read"
 msgstr "Прочитано"
@@ -1495,6 +1596,10 @@ msgstr "Удалить %1 из библиотеки Suwayomi?"
 msgid "Remove from library"
 msgstr "Удалить из библиотеки"
 
+msgid ""
+"Removes on-device archives. Server chapters and read state stay unchanged."
+msgstr ""
+
 msgid "Removing from library..."
 msgstr "Удаление из библиотеки..."
 
@@ -1506,6 +1611,10 @@ msgstr "Сбросить фильтры"
 
 #, fuzzy
 msgid "Resume all downloads"
+msgstr "Отменить все загрузки"
+
+#, fuzzy
+msgid "Resume downloads for this manga"
 msgstr "Отменить все загрузки"
 
 msgid "Retry"
@@ -1709,6 +1818,9 @@ msgstr "Статус"
 msgid "Stay here"
 msgstr ""
 
+msgid "Stops current work and clears queued chapters for this manga."
+msgstr ""
+
 msgid "Suwayomi"
 msgstr "Suwayomi"
 
@@ -1856,11 +1968,19 @@ msgstr "Эту мангу сейчас нельзя обновить."
 msgid "This manga cannot be updated right now."
 msgstr "Эту мангу сейчас нельзя изменить."
 
+#, fuzzy
+msgid "This manga has no active or queued download tasks."
+msgstr "Для этой манги главы ещё не загружены."
+
 msgid "This manga has no chapters loaded."
 msgstr "Для этой манги главы ещё не загружены."
 
 msgid "This manga has no chapters."
 msgstr "У этой манги нет глав."
+
+#, fuzzy
+msgid "This manga has no downloaded chapters to delete."
+msgstr "Для этой манги главы ещё не загружены."
 
 msgid "This source has no filters."
 msgstr "У этого источника нет фильтров."
@@ -1887,6 +2007,10 @@ msgstr ""
 msgid "UI Login"
 msgstr "Вход UI Login"
 
+#, fuzzy
+msgid "Undownloaded"
+msgstr "Скачано"
+
 msgctxt "extension action"
 msgid "Uninstall"
 msgstr "Удалить"
@@ -1899,6 +2023,10 @@ msgstr "Неизвестно"
 
 msgid "Unknown error"
 msgstr "Неизвестная ошибка"
+
+#, fuzzy
+msgid "Unknown manga"
+msgstr "Неизвестно"
 
 msgid "Unread"
 msgstr "Непрочитано"

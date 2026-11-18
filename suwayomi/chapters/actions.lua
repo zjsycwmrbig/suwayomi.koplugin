@@ -723,7 +723,8 @@ function Methods:performBulkChapterAction(action_id, menu_context)
     local context = self.current_chapter_context
     local manga = context and context.manga
     if manga and action_id ~= "select_all" and action_id ~= "select_chapters" and action_id ~= "select_range"
-        and action_id ~= "clear_selection" and action_id ~= "scanlator_filter" then
+        and action_id ~= "clear_selection" and action_id ~= "scanlator_filter"
+        and action_id ~= "download_filter" then
         local recovered_refresh = action_id == "refresh_chapters" and not manga.local_only and manga.id
             and ((context.missing and not manga.endpoint_scope)
                 or (manga.endpoint_scope and manga.endpoint_scope
@@ -754,6 +755,10 @@ function Methods:performBulkChapterAction(action_id, menu_context)
     end
     if action_id == "scanlator_filter" then
         self:showScanlatorFilterActions(menu_context)
+        return true
+    end
+    if action_id == "download_filter" then
+        self:showDownloadManagerFilterActions(menu_context)
         return true
     end
     if MangaActionMenu.isSharedAction(action_id) and self.current_chapter_context and self.performMangaAction then
@@ -791,6 +796,24 @@ function Methods:performBulkChapterAction(action_id, menu_context)
         local _, err = self:getDownloadQueue():cancelAll()
         if err then self:showMessage(err) end
         self:refreshChapterMenu({ quick = true })
+        return true
+    end
+    if action_id == "cancel_manga_downloads" then
+        local queue = self:getDownloadQueue()
+        local snapshot = queue:getSnapshot()
+        local manga_id = tostring(manga and (manga.id or manga.title) or "")
+        local cancelled, failed = 0, 0
+        for _, collection in ipairs({ snapshot.active or {}, snapshot.queued or {} }) do
+            for _, job in ipairs(collection) do
+                local job_manga = job.manga or {}
+                if tostring(job_manga.id or job_manga.title or "") == manga_id then
+                    local ok = queue:cancelPending(job.manga, job.chapter)
+                    if ok then cancelled = cancelled + 1 else failed = failed + 1 end
+                end
+            end
+        end
+        self:refreshChapterMenu()
+        self:showMessage(I18n.f("Cancelled %1 downloads; %2 could not be cancelled.", cancelled, failed))
         return true
     end
     if action_id == "mark_read_selected" then

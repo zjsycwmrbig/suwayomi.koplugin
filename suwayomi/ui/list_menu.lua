@@ -774,7 +774,7 @@ function ListMenu.recalculateDimen(menu, no_recalculate_dimen)
         if not menu.no_title then
             others_height = others_height + menu.title_bar.dimen.h
         end
-        if menu.page_info then
+        if menu.page_info and not menu._suwayomi_hide_page_info then
             others_height = others_height + menu.page_info:getSize().h
         end
     end
@@ -1051,13 +1051,17 @@ function ListMenu.updateItems(menu, select_number, no_recalculate_dimen)
         menu.layout = flat_layout
         local focus_changed = (menu.itemnumber and menu.itemnumber > 0)
             or (Device.hasDPad and Device:hasDPad())
-        menu:updatePageInfo(select_number)
+        if not menu._suwayomi_hide_page_info then
+            menu:updatePageInfo(select_number)
+        end
         if focus_changed and menu.selected and positions[menu.selected.y] then
             menu.selected = positions[menu.selected.y]
         end
         menu.layout = grid_layout
     else
-        menu:updatePageInfo(select_number)
+        if not menu._suwayomi_hide_page_info then
+            menu:updatePageInfo(select_number)
+        end
     end
     menu:mergeTitleBarIntoLayout()
     if menu._suwayomi_on_view_menu then
@@ -1116,6 +1120,14 @@ end
 
 function ListMenu.install(menu, options)
     applyViewMode(menu, options and options.view_mode)
+    menu._suwayomi_hide_page_info = options and options.bottom_navigation ~= nil or false
+    if menu.page_info then
+        if menu._suwayomi_hide_page_info and menu.page_info.hide then
+            menu.page_info:hide()
+        elseif not menu._suwayomi_hide_page_info and menu.page_info.show then
+            menu.page_info:show()
+        end
+    end
     menu._suwayomi_on_view_menu = options and options.on_view_menu
     if menu._suwayomi_on_view_menu and not menu._suwayomi_view_button then
         menu._suwayomi_view_button = require("ui/widget/button"):new{

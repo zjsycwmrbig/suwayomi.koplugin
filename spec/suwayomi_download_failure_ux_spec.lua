@@ -18,6 +18,23 @@ describe("download failure user actions", function()
     local chapter = { id = "c1", name = "Chapter 1" }
     local full_error = "HTTP 503\n" .. string.rep("診断 details with 100% certainty\n", 200) .. "last detail"
 
+    local function openMangaDetail(menu)
+        assert.is_truthy(menu.item_table[1].download_group)
+        menu.item_table[1].callback()
+        return stack[#stack]
+    end
+
+    local function openJob(menu, state)
+        local detail = openMangaDetail(menu)
+        for _, row in ipairs(detail.item_table) do
+            if row.job and row.job.state == state then
+                row.callback()
+                return stack[#stack], detail
+            end
+        end
+        error("Missing " .. state .. " job row")
+    end
+
     local function clearModules()
         for _, name in ipairs(modules) do
             package.loaded[name] = nil
@@ -198,7 +215,7 @@ describe("download failure user actions", function()
             assert.are.equal("Could not clear failed downloads: " .. save_error, messages[#messages])
             assert.are.equal(committed, saved)
             assert.are.equal(1, queue:getFailedCount())
-            assert.are.equal("Failed", plugin.current_downloads_menu.item_table[1].mandatory)
+            assert.are.equal(1, plugin.current_downloads_menu.item_table[1].download_group.failed)
         end)
     end
 
@@ -237,32 +254,30 @@ describe("download failure user actions", function()
             local committed = saved
             local menu = plugin:showDownloads()
             save_error = "write_failed: injected cancellation failure"
-            menu.item_table[1].callback()
-            stack[2].select(active and "cancel_download" or "cancel_queued")
+            local actions = openJob(menu, active and "downloading" or "queued")
+            actions.select(active and "cancel_download" or "cancel_queued")
             assert.are.equal("Could not cancel download: " .. save_error, messages[#messages])
             assert.are.equal(committed, saved)
             assert.are.equal(active and 1 or 0, queue:getActiveCount())
             assert.are.equal(0, terminated)
-            assert.are.equal(active and "Downloading" or "Queued",
-                plugin.current_downloads_menu.item_table[1].mandatory)
+            local group = plugin.current_downloads_menu.item_table[1].download_group
+            assert.are.equal(active and 1 or 0, group.active)
+            assert.are.equal(active and 0 or 1, group.queued)
         end)
     end
 
-    it("opens full multiline details directly and closes back to the same Downloads menu", function()
+    it("opens full multiline details from the manga task screen", function()
         restoreSession({ job("failed", full_error) })
         local menu = plugin:showDownloads()
         assert.are.equal(1, #stack)
-        assert.are.equal("Failed", menu.item_table[1].mandatory)
-        assert.is_true(#menu.item_table[1].subtitle < 200)
-        assert.is_nil(menu.item_table[1].subtitle:find("\n", 1, true))
-        menu.item_table[1].callback()
-        local viewer = stack[2]
+        local viewer, detail = openJob(menu, "failed")
+        assert.are.equal("Example manga", detail.title)
         assert.is_not_nil(viewer)
         assert.is_truthy(viewer.text:find("Example manga / Chapter 1", 1, true))
         assert.is_truthy(viewer.text:find(full_error, 1, true))
         assert.are.equal(full_error, queue:findPersistentJob("m1:c1").progress.error)
         button(viewer, "close").callback()
-        assert.are.same({ menu }, stack)
+        assert.are.same({ menu, detail }, stack)
         assert.are.equal("failed", queue:getStatus(manga, chapter).state)
         assert.are.same({}, messages)
     end)
@@ -285,10 +300,12 @@ describe("download failure user actions", function()
     it("refreshes the existing Downloads row after Retry", function()
         restoreSession({ job("failed", "network failure") })
         local menu = plugin:showDownloads()
-        menu.item_table[1].callback()
-        button(stack[2], "retry").callback()
-        assert.are.same({ menu }, stack)
-        assert.are.equal("Queued", menu.item_table[1].mandatory)
+        openJob(menu, "failed")
+        button(stack[#stack], "retry").callback()
+        assert.are.equal(menu, stack[1])
+        local group = menu.item_table[1].download_group
+        assert.are.equal(1, group.active + group.queued,
+            "group failed=" .. tostring(group.failed) .. ", queue=" .. tostring(#queue:getSnapshot().queued))
         assert.are.equal(1, #queue:getSnapshot().queued)
         assert.are.equal(0, queue:getFailedCount())
     end)
@@ -297,10 +314,10 @@ describe("download failure user actions", function()
         for _, error_message in ipairs({ false, "", " \n\t" }) do
             restoreSession({ job("failed", error_message or nil) })
             local menu = plugin:showDownloads()
-            assert.are.equal("No error details were recorded.", menu.item_table[1].subtitle)
-            menu.item_table[1].callback()
-            assert.is_truthy(stack[#stack].text:find("No error details were recorded.", 1, true))
+            local viewer = openJob(menu, "failed")
+            assert.is_truthy(viewer.text:find("No error details were recorded.", 1, true))
             button(stack[#stack], "close").callback()
+            ui:close(stack[#stack])
             ui:close(menu)
             plugin:showChapterDownloadError(manga, chapter)
             assert.is_truthy(stack[#stack].text:find("No error details were recorded.", 1, true))
@@ -311,26 +328,32 @@ describe("download failure user actions", function()
     it("keeps scheduled retry errors during the session without adding countdown refreshes", function()
         restoreSession({ job("queued", full_error, 130) })
         local menu = plugin:showDownloads()
-        assert.are.equal("Retry scheduled", menu.item_table[1].mandatory)
-        assert.is_truthy(menu.item_table[1].subtitle:find(os.date("%Y-%m-%d %H:%M:%S", 130), 1, true))
+        local detail = openMangaDetail(menu)
+        local queued_row
+        for _, row in ipairs(detail.item_table) do
+            if row.job and row.job.state == "queued" then queued_row = row; break end
+        end
+        assert.is_not_nil(queued_row)
+        assert.are.equal("Queued", queued_row.mandatory)
         assert.are.equal(full_error, queue:getSnapshot().queued[1].progress.error)
         local schedule_count = #scheduled
-        menu.item_table[1].callback()
-        local actions = stack[2]
+        queued_row.callback()
+        local actions = stack[#stack]
         assert.are.equal("cancel_queued", actions.actions[1].id)
         assert.are.equal("open_chapter_list", actions.actions[2].id)
         actions.select("download_error")
-        local viewer = stack[2]
+        local viewer = stack[#stack]
         assert.is_truthy(viewer.text:find(full_error, 1, true))
         assert.is_false(button(viewer, "retry").enabled)
         button(viewer, "close").callback()
         assert.are.equal(schedule_count, #scheduled)
         assert.are.equal(130, queue:findPersistentJob("m1:c1").retry_at)
         assert.are.equal(0, queue:getFailedCount())
+        ui:close(detail)
         ui:close(menu)
         plugin:showChapterDownloadError(manga, chapter)
-        assert.is_truthy(stack[1].text:find(full_error, 1, true))
-        button(stack[1], "close").callback()
+        assert.is_truthy(stack[#stack].text:find(full_error, 1, true))
+        button(stack[#stack], "close").callback()
         queue = newQueue()
         plugin.queue = queue
         assert(queue:reconcile())
@@ -346,19 +369,19 @@ describe("download failure user actions", function()
     it("keeps individual cancellation available while a retry is scheduled", function()
         restoreSession({ job("queued", full_error, 130) })
         local menu = plugin:showDownloads()
-        menu.item_table[1].callback()
-        stack[2].select("cancel_queued")
+        local actions = openJob(menu, "queued")
+        actions.select("cancel_queued")
         assert.are.equal(0, #queue:getSnapshot().queued)
         assert.is_nil(queue:findPersistentJob("m1:c1"))
         assert.is_nil(queue:getStatus(manga, chapter))
-        assert.are.equal("No downloads queued.", plugin.current_downloads_menu.item_table[3].text)
+        assert.are.equal("No manga download tasks.", plugin.current_downloads_menu.item_table[1].text)
     end)
 
     it("revalidates Retry after jobs become queued, active, completed, cleared, or replaced", function()
         for _, state in ipairs({ "queued", "downloading", "downloaded", "cleared", "failed" }) do
             restoreSession({ job("failed", "old error") })
             local menu = plugin:showDownloads()
-            menu.item_table[1].callback()
+            openJob(menu, "failed")
             local viewer = stack[#stack]
             if state == "cleared" then
                 queue:clearFailed()
@@ -370,8 +393,7 @@ describe("download failure user actions", function()
             end
             button(viewer, "retry").callback()
             assert.are.equal(state == "failed" and 1 or 0, #queue:getSnapshot().queued)
-            assert.are.same({ menu }, stack)
-            ui:close(menu)
+            while #stack > 0 do ui:close(stack[#stack]) end
         end
     end)
 
@@ -407,19 +429,17 @@ describe("download failure user actions", function()
     end)
 
     it("publishes terminal and scheduled failures only after complete queue state is available", function()
-        local menu = plugin:showDownloads()
+        plugin:showDownloads()
         failDownload("terminal error", false)
         assert.are.equal(1, queue:getFailedCount())
-        assert.are.equal("Failed", menu.item_table[1].mandatory)
-        for _, row in ipairs(menu.item_table) do
-            if row.text == "Clear failed" then row.callback(); break end
-        end
+        assert.are.equal(1, plugin.current_downloads_menu.item_table[1].download_group.failed)
+        plugin:performDownloadsTitleAction({ id = "clear_failed" }, plugin.current_downloads_menu)
         assert.are.equal(0, queue:getFailedCount())
         assert.are.same({}, messages)
         local current_menu = plugin.current_downloads_menu
         local retry_error = "HTTP 503: temporary source failure"
         failDownload(retry_error, true)
-        assert.are.equal("Retry scheduled", current_menu.item_table[1].mandatory)
+        assert.are.equal(1, current_menu.item_table[1].download_group.queued)
         assert.are.equal(retry_error, queue:getSnapshot().queued[1].progress.error)
         assert.are.same({}, messages)
     end)

@@ -422,6 +422,32 @@ describe("suwayomi/downloads/queue", function()
         assert.are.equal("m1:399", context.queue:getSnapshot().queued[1].key)
     end)
 
+    it("pauses and resumes queued chapters per manga", function()
+        local context = build_queue({ subprocess_done = false })
+        local manga = { id = "m1", title = "Sousou no Frieren", endpoint_scope = ENDPOINT_SCOPE }
+        local other_manga = { id = "m2", title = "Other", endpoint_scope = ENDPOINT_SCOPE }
+        local chapter = { id = "398", name = "Official_Vol. 1 Ch. 1" }
+        local other_chapter = { id = "1", name = "Chapter 1" }
+
+        assert.is_true(context.queue:setMangaPaused(manga, true))
+        assert.is_true(context.queue:isMangaPaused(manga))
+        assert.is_false(context.queue:isMangaPaused(other_manga))
+        context.queue:enqueue(manga, chapter, "/books")
+        assert.are.equal(1, #context.scheduled)
+        table.remove(context.scheduled, 1).callback()
+        assert.are.equal(0, context.download_calls())
+        assert.is_true(context.queue:getSnapshot().paused_mangas.m1)
+
+        context.queue:enqueue(other_manga, other_chapter, "/books")
+        assert.are.equal(1, #context.scheduled)
+        table.remove(context.scheduled, 1).callback()
+        assert.are.equal(1, context.download_calls())
+
+        assert.is_true(context.queue:setMangaPaused(manga, false))
+        assert.is_false(context.queue:isMangaPaused(manga))
+        assert.is_true(context.download_calls() >= 2)
+    end)
+
     it("batch enqueues multiple chapters with one persistence write and process schedule", function()
         local context = build_queue({ subprocess_done = false })
         local manga = { id = "m1", title = "Sousou no Frieren", endpoint_scope = ENDPOINT_SCOPE }

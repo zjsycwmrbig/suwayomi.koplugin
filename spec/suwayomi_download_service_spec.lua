@@ -37,6 +37,29 @@ describe("process-owned download navigation", function()
         handle:close()
         return content
     end
+    local function downloadsGroup(plugin)
+        local menu = plugin:showDownloads()
+        return menu, assert(menu.item_table[1] and menu.item_table[1].download_group)
+    end
+    local function downloadJobRow(plugin, state)
+        local _, group = downloadsGroup(plugin)
+        local detail = assert(plugin:showDownloadMangaGroup(group))
+        for _, row in ipairs(detail.item_table) do
+            if row.job and row.job.state == state then return row, detail end
+        end
+        error("Missing " .. state .. " job row")
+    end
+    local function assertNoActiveDownloads(plugin)
+        local menu = plugin:showDownloads()
+        local group = menu.item_table[1] and menu.item_table[1].download_group
+        if group then
+            assert.are.equal(0, group.active or 0)
+            assert.are.equal(0, group.queued or 0)
+            assert.are.equal(0, group.failed or 0)
+        else
+            assert.are.equal("No manga download tasks.", menu.item_table[1].text)
+        end
+    end
     local function publishArchive(active, terminal_progress)
         local path = directory .. "/" .. active.chapter.id .. ".cbz"
         local native = require("spec/support/native_archiver")
@@ -208,6 +231,7 @@ describe("process-owned download navigation", function()
         end
         local facade = require("suwayomi/ui")
         for name, method in pairs(require("suwayomi/ui/downloads")) do facade[name] = method end
+        facade.showDownloadRefillDetails = facade.showRefillDetails
         facade.updateChapterMenu = function(menu, options)
             menu.item_table = require("suwayomi/ui/list_rows").buildChapterMenuTable(options.chapters)
         end
@@ -413,9 +437,12 @@ describe("process-owned download navigation", function()
             plugin:refreshChapterMenu({ quick = true })
             assert.are.equal("Downloading 3/8", plugin.current_chapter_menu.item_table[1].mandatory)
             local menu = plugin:showDownloads()
+            local group = assert(menu.item_table[1].download_group)
+            assert.is_true(group.active > 0)
+            local detail = assert(plugin:showDownloadMangaGroup(group))
             local progress_row
-            for _, row in ipairs(menu.item_table) do
-                if row.text == "Example / Chapter 1" then progress_row = row end
+            for _, row in ipairs(detail.item_table) do
+                if row.job and row.job.chapter.id == "c1" then progress_row = row end
             end
             assert.are.equal("Downloading 3/8", progress_row.mandatory)
             local queued_ids = {}
@@ -453,11 +480,8 @@ describe("process-owned download navigation", function()
         assert.is_nil(settings:loadChapterLedger()["m1:c4"])
         assert.is_nil(settings:loadReaderReturnContexts()[path])
         assert.are.equal("old untracked partial", read(directory .. "/c1.cbz.part"))
-        local failed_rows = 0
-        for _, row in ipairs(plugin:showDownloads().item_table) do
-            if row.mandatory == "Failed" then failed_rows = failed_rows + 1 end
-        end
-        assert.are.equal(1, failed_rows)
+        local _, group = downloadsGroup(plugin)
+        assert.are.equal(1, group.failed)
         advance(899)
         advance(0)
         assert.are.equal("downloading", queue:getStatus(manga, chapters[2]).state)
@@ -756,7 +780,7 @@ describe("process-owned download navigation", function()
         plugin = host("reader-a")
         assert.are.same({}, plugin.download_snapshot.active)
         assert.are.equal("downloaded", plugin:getDownloadQueue():getStatus(manga, chapters[1]).state)
-        assert.are.equal("0 active, 0 queued, 0 failed", plugin:showDownloads().item_table[2].subtitle)
+        assertNoActiveDownloads(plugin)
     end)
 
     for _, case in ipairs({
@@ -814,7 +838,7 @@ describe("process-owned download navigation", function()
             assert.is_nil(read(active.progress_path))
             assert.are.equal("synthetic archive", read(path))
             plugin = host("reader-a")
-            assert.are.equal("0 active, 0 queued, 0 failed", plugin:showDownloads().item_table[2].subtitle)
+            assertNoActiveDownloads(plugin)
         end)
     end
 
@@ -844,7 +868,7 @@ describe("process-owned download navigation", function()
                 assert.are.equal("downloaded", queue:getStatus(manga, chapters[1]).state)
                 assert.are.equal("completed archive", read(path))
                 assert.is_nil(read(active.progress_path))
-                assert.are.equal("0 active, 0 queued, 0 failed", plugin:showDownloads().item_table[2].subtitle)
+                assertNoActiveDownloads(plugin)
                 assert.are.same({ version = 99, custom = "preserve" }, settings.store:readKey("unrelated"))
                 if shape == "entry" then
                     assert.are.same({ custom = "preserve" }, settings.store:readKey(field).unrelated)
@@ -946,19 +970,21 @@ describe("process-owned download navigation", function()
         assert.is_truthy(menu.item_table[1].mandatory:find("3/8", 1, true))
         local visible = menu.item_table
         local downloads = plugin:showDownloads()
+        local group = assert(downloads.item_table[1].download_group)
+        assert.are.equal(1, group.active)
         write(active.progress_path, "state=downloading\ncurrent=5\ntotal=8\n")
         advance(0.5)
         assert.are.equal(visible, menu.item_table)
-        assert.are.equal("Downloading 5/8", downloads.item_table[1].mandatory)
+        assert.are.equal(1, downloads.item_table[1].download_group.active)
         plugin:getNavigation():pop(downloads)
         advance(0)
         assert.is_truthy(menu.item_table[1].mandatory:find("5/8", 1, true))
         owner:close()
         write(active.progress_path, "state=downloading\ncurrent=6\ntotal=8\n")
         advance(0.5)
-        assert.are.equal("Downloading 5/8", downloads.item_table[1].mandatory)
+        assert.are.equal(1, downloads.item_table[1].download_group.active)
         local next_plugin = host("reader-a")
-        assert.are.equal("Downloading 6/8", next_plugin:showDownloads().item_table[1].mandatory)
+        assert.are.equal(1, next_plugin:showDownloads().item_table[1].download_group.active)
     end)
 
     it("rebuilds only the affected manga after deferred cleanup", function()
@@ -1111,7 +1137,7 @@ describe("process-owned download navigation", function()
         assert.are.equal(queue, broken:getDownloadQueue())
         assert(queue:enqueue(manga, chapters[1], directory))
         advance(0)
-        local menu = healthy:showDownloads()
+        healthy:showDownloads()
         function broken:onDownloadSnapshot() error("retired renderer failure") end
         local active = queue:getActiveJob("m1:c1")
         local path = directory .. "/c1.cbz"
@@ -1119,7 +1145,7 @@ describe("process-owned download navigation", function()
         write(active.progress_path, "state=downloaded\ncurrent=8\ntotal=8\npath=" .. path .. "\n")
         workers[active.pid].alive = false
         advance(0.5)
-        assert.are.equal("No downloads queued.", menu.item_table[3].text)
+        assertNoActiveDownloads(healthy)
         assert.are.same({}, healthy.download_snapshot.active)
         assert.are.equal(path, settings:loadChapterLedger()["m1:c1"].path)
         assert.are.equal("synthetic archive", read(path))
@@ -1819,12 +1845,8 @@ describe("process-owned download navigation", function()
         local returned = host("files")
         local snapshot = returned:getDownloadQueue():getSnapshot()
         assert.are.equal("c6", snapshot.active[1].chapter.id)
-        local visible
-        for _, row in ipairs(returned:showDownloads().item_table) do
-            if row.text == "Example / Chapter 6" then visible = row end
-        end
-        assert.is_not_nil(visible)
-        assert.are.equal("Downloading", visible.mandatory)
+        local row, _ = downloadJobRow(returned, "downloading")
+        assert.are.equal("Downloading", row.mandatory)
     end)
 
     it("ignores final-page-only, unfinished, and unlinked completed reader closes", function()
@@ -1901,7 +1923,14 @@ describe("process-owned download navigation", function()
         plugin:refreshDownloadsMenu()
         row = refillRow(plugin.current_downloads_menu)
         assert.are.equal(subtitle, row.subtitle, "repainting must retain the fixed retry time")
-        row.callback()
+        plugin:showDownloadMangaGroup(row.download_group)
+        local detail = assert(plugin.current_download_manga_menu)
+        local refill_action
+        for _, item in ipairs(detail.item_table) do
+            if item.refill then refill_action = item; break end
+        end
+        assert.is_not_nil(refill_action)
+        refill_action.callback()
         local retired_controls = assert(shown).buttons_table[1]
         local committed = read(settings.store.path)
         owner:close()
@@ -1912,7 +1941,15 @@ describe("process-owned download navigation", function()
         retired_controls[2].callback()
         assert.are.equal(committed, read(settings.store.path))
         local current = host("files")
-        refillRow(current:showDownloads()).callback()
+        row = refillRow(current:showDownloads())
+        current:showDownloadMangaGroup(row.download_group)
+        local current_detail = assert(current.current_download_manga_menu)
+        local current_refill
+        for _, item in ipairs(current_detail.item_table) do
+            if item.refill then current_refill = item; break end
+        end
+        assert.is_not_nil(current_refill)
+        current_refill.callback()
         shown.buttons_table[1][2].callback()
         assert.are.equal(0, settings:loadMangaKeepNextUnreadDownloads(scoped))
         assert.are.same({}, queue:getSnapshot().refills)

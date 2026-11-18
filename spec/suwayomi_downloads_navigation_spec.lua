@@ -83,7 +83,7 @@ describe("Downloads chapter navigation", function()
                 function options:onMenuSelect(item)
                     if item.select_enabled == false then return true end
                     self:onMenuChoice(item)
-                    if self.close_callback then self.close_callback() end
+                    if not item.keep_menu_open and self.close_callback then self.close_callback() end
                     return true
                 end
                 function options:onClose() ui:close(self) end
@@ -121,53 +121,64 @@ describe("Downloads chapter navigation", function()
         assert(queue:enqueue(manga, chapter, os.getenv("TEMP") or "/tmp"))
         if state == "active" then queue:process() end
         local menu = plugin:showDownloads()
-        assert.are.equal(state == "active" and "Downloading" or "Queued", menu.item_table[1].mandatory)
-        menu:onMenuSelect(menu.item_table[1])
+        local group = menu.item_table[1].download_group
+        assert.are.equal(state == "active" and 1 or 0, group.active)
+        assert.are.equal(state == "active" and 0 or 1, group.queued)
+        menu.item_table[1].callback()
+        local detail = plugin.current_download_manga_menu
+        local job_row
+        for _, row in ipairs(detail.item_table) do
+            if row.job then job_row = row; break end
+        end
+        assert.is_not_nil(job_row)
+        job_row.callback()
         assert.are.equal(menu, plugin.current_downloads_menu)
         assert.is_true(plugin:isSuwayomiScreenActive(menu))
         selectAction("open_chapter_list")
-        assert.are.same({ menu, plugin.current_chapter_menu }, stack)
+        assert.are.same({ menu, detail, plugin.current_chapter_menu }, stack)
         assert.is_false(plugin.current_chapter_menu.item_table[1].select_enabled)
         assert.is_not_nil(request)
         assert.are.equal(manga.id, request.request.manga_id)
-        return menu, chapter
+        return menu, chapter, detail
     end
 
     for _, state in ipairs({ "queued", "active" }) do
         for _, sparse in ipairs({ false, true }) do
             it("loads chapters from " .. state .. (sparse and " restored sparse metadata" or " metadata") .. " and returns to Downloads", function()
                 local manga = sparse and { id = "manga" } or { id = "manga", title = "Manga", initialized = true }
-                local menu, chapter = openFrom(state, manga)
+                local menu, chapter, detail = openFrom(state, manga)
                 assert.are.equal("fetch_chapters_for_manga", request.request.action)
                 request.on_finish({ ok = true, chapters = { chapter } })
                 local chapters = plugin.current_chapter_menu
                 assert.is_not_nil(chapters)
                 assert.are.equal("Chapter from network", chapters.item_table[1].text)
-                assert.are.same({ menu, chapters }, stack)
-                assert.are.equal(2, #plugin:getNavigation().entries)
+                assert.are.same({ menu, detail, chapters }, stack)
+                assert.are.equal(3, #plugin:getNavigation().entries)
                 assert.are.equal(menu, plugin.current_downloads_menu)
                 assert.is_nil(plugin.current_chapter_context.manga.in_library)
                 if sparse then assert.is_nil(plugin.current_chapter_context.manga.initialized) end
                 chapters:onClose()
-                assert.are.same({ menu }, stack)
-                assert.are.equal(1, #plugin:getNavigation().entries)
-                assert.is_true(plugin:getNavigation():isCurrent(menu))
+                assert.are.same({ menu, detail }, stack)
+                assert.are.equal(2, #plugin:getNavigation().entries)
+                assert.is_true(plugin:getNavigation():isCurrent(detail))
                 assert.is_nil(plugin.current_chapter_menu)
+                detail:onClose()
+                assert.are.same({ menu }, stack)
                 menu:onClose()
                 assert.is_nil(plugin.current_downloads_menu)
                 assert.are.equal(0, #plugin:getNavigation().entries)
             end)
         end
         it("keeps " .. state .. " Downloads origin after chapter loading failure", function()
-            local menu = openFrom(state, { id = "manga" })
+            local menu, _, detail = openFrom(state, { id = "manga" })
             request.on_finish({ ok = false, error = "Could not load chapters: HTTP 503" })
             local chapters = plugin.current_chapter_menu
-            assert.are.same({ menu, chapters }, stack)
+            assert.are.same({ menu, detail, chapters }, stack)
             assert.is_false(chapters.item_table[1].select_enabled)
             assert.are.equal(menu, plugin.current_downloads_menu)
             chapters:onClose()
-            assert.are.same({ menu }, stack)
-            assert.are.equal(1, #plugin:getNavigation().entries)
+            assert.are.same({ menu, detail }, stack)
+            assert.are.equal(2, #plugin:getNavigation().entries)
         end)
     end
 end)

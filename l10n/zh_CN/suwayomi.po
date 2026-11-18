@@ -53,6 +53,15 @@ msgid "%1 download is busy. Mark it read again after it finishes."
 msgid_plural "%1 downloads are busy. Mark them read again after they finish."
 msgstr[0] "%1 个下载正在进行中。请在下载完成后重新标记为已读。"
 
+msgid "%1 downloaded"
+msgstr "已下载 %1 章"
+
+msgid "%1 downloading"
+msgstr "%1 个正在下载"
+
+msgid "%1 failed"
+msgstr "%1 个失败"
+
 msgid "%1 failed for %2"
 msgstr "%2 的%1失败了"
 
@@ -68,6 +77,9 @@ msgid_plural ""
 "%1 more chapters are available. Run this action again to download them."
 msgstr[0] "还有 %1 章可下载。请再次执行此操作以下载这些章节。"
 
+msgid "%1 queued"
+msgstr "%1 个排队中"
+
 msgid "%1 result"
 msgid_plural "%1 results"
 msgstr[0] "%1 个结果"
@@ -82,6 +94,10 @@ msgstr[0] "已选择 %1 项"
 msgid "%1 selected chapter"
 msgid_plural "%1 selected chapters"
 msgstr[0] "已选择 %1 章"
+
+msgid "%1 task"
+msgid_plural "%1 tasks"
+msgstr[0] "%1 个任务"
 
 msgid "1 selected"
 msgid_plural "%1 selected"
@@ -106,6 +122,9 @@ msgstr "关于书库"
 msgid "Actions"
 msgstr "操作"
 
+msgid "Active downloads"
+msgstr "正在下载"
+
 msgid "Add chapter range"
 msgstr "追加章节范围"
 
@@ -114,6 +133,12 @@ msgstr "添加到书架"
 
 msgid "Adding to library..."
 msgstr "正在添加到书架..."
+
+msgid "Adds missing chapters in batches of up to 50."
+msgstr "每次最多添加 50 个尚未下载的章节。"
+
+msgid "All chapters"
+msgstr "全部章节"
 
 msgid "All manga"
 msgstr "所有漫画"
@@ -276,11 +301,17 @@ msgstr "批量下载"
 msgid "Cancel"
 msgstr "取消"
 
+msgid "Cancel %1 active or queued chapter downloads for this manga?"
+msgstr "要取消此漫画的 %1 个进行中或排队章节下载吗？"
+
 msgid "Cancel all downloads"
 msgstr "取消所有下载"
 
 msgid "Cancel all downloads?"
 msgstr "取消所有下载？"
+
+msgid "Cancel all tasks for this manga"
+msgstr "取消此漫画的全部任务"
 
 msgid "Cancel download"
 msgstr "取消下载"
@@ -296,6 +327,9 @@ msgstr "取消排队下载"
 
 msgid "Cancel search"
 msgstr "取消搜索"
+
+msgid "Cancelled %1 downloads; %2 could not be cancelled."
+msgstr "已取消 %1 个下载；%2 个无法取消。"
 
 msgid "Cannot cancel download: storage is ambiguous"
 msgstr "无法取消下载：存储状态不明确"
@@ -594,6 +628,9 @@ msgstr "无法更新下载暂停状态：%1"
 msgid "Could not update library."
 msgstr "无法更新书架。"
 
+msgid "Could not update manga download state: %1"
+msgstr "无法更新漫画的下载状态：%1"
+
 msgid "Could not verify download"
 msgstr "无法校验下载"
 
@@ -606,8 +643,16 @@ msgstr "仅封面"
 msgid "Cover with text"
 msgstr "封面与文字"
 
+msgid "Current active chapter finishes; queued chapters wait."
+msgstr "当前正在下载的章节会完成，排队章节将暂停。"
+
 msgid "Delete"
 msgstr "删除"
+
+msgid ""
+"Delete %1 downloaded chapter files for this manga? Server chapters and read "
+"state stay unchanged."
+msgstr "要删除此漫画的 %1 个已下载章节文件吗？服务器章节和阅读状态不会改变。"
 
 msgid ""
 "Delete %1 local chapter files and their KOReader sidecars? This cannot be "
@@ -639,6 +684,9 @@ msgstr "清理全部已读下载"
 msgid "Delete chapter settings are unavailable."
 msgstr "章节删除设置不可用。"
 
+msgid "Delete downloaded chapters for this manga"
+msgstr "删除此漫画的已下载章节"
+
 msgid "Delete downloaded file for %1 from this device?"
 msgstr "从此设备删除 %1 的已下载文件？"
 
@@ -665,6 +713,9 @@ msgstr "删除选中的本地下载"
 
 msgid "Delete when marked read: %1"
 msgstr "标为已读后删除：%1"
+
+msgid "Deleted %1 downloads; %2 could not be deleted."
+msgstr "已删除 %1 个下载；%2 个无法删除。"
 
 msgid "Deleted %1 local downloads; %2 skipped or failed."
 msgstr "已删除 %1 个本地下载；%2 个跳过或失败。"
@@ -696,6 +747,9 @@ msgid ""
 "Download belongs to a different server. Restore the original server in "
 "Connection settings, then Retry."
 msgstr "此下载属于其他服务器。请在连接设置中恢复原服务器后重试。"
+
+msgid "Download chapter filter"
+msgstr "下载章节筛选"
 
 msgid "Download damaged; redownload"
 msgstr "下载文件已损坏；请重新下载"
@@ -772,6 +826,9 @@ msgstr ""
 msgid "Download the chapter first."
 msgstr "请先下载此章节。"
 
+msgid "Download undownloaded chapters"
+msgstr "下载未下载章节"
+
 msgid "Download unread (up to 50)"
 msgstr "下载未读章节（最多 50 章）"
 
@@ -789,6 +846,9 @@ msgstr "正在下载 %1"
 
 msgid "Downloading %1/%2"
 msgstr "正在下载 %1/%2"
+
+msgid "Downloading or queued"
+msgstr "正在下载或排队"
 
 msgid "Downloads"
 msgstr "下载"
@@ -865,6 +925,9 @@ msgstr "扩展更新超时。"
 msgid "Failed"
 msgstr "失败"
 
+msgid "Failed downloads"
+msgstr "下载失败"
+
 msgid "Failed to queue %1 chapter download."
 msgid_plural "Failed to queue %1 chapter downloads."
 msgstr[0] "无法将 %1 个章节下载加入队列。"
@@ -883,6 +946,9 @@ msgstr "筛选"
 
 msgid "Filter name"
 msgstr "筛选器名称"
+
+msgid "Filter: %1"
+msgstr "筛选：%1"
 
 msgid "Finishing and deletion"
 msgstr "读完与删除"
@@ -1130,6 +1196,9 @@ msgstr "下次重试：%1"
 msgid "No actions available"
 msgstr "没有可用操作"
 
+msgid "No active download tasks"
+msgstr "没有进行中的下载任务"
+
 msgid "No chapters available to download."
 msgstr "没有可下载的章节。"
 
@@ -1142,6 +1211,9 @@ msgid ""
 "No chapters match the saved scanlator filter. Other scanlators are not "
 "selected."
 msgstr "没有章节匹配已保存的汉化组筛选器。未选择其他汉化组。"
+
+msgid "No chapters match this filter."
+msgstr "没有章节符合当前筛选条件。"
 
 msgid "No chapters selected."
 msgstr "未选择章节。"
@@ -1169,6 +1241,9 @@ msgstr "未记录错误详情。"
 
 msgid "No local chapter archives found."
 msgstr "未找到本地章节文件。"
+
+msgid "No manga download tasks."
+msgstr "没有漫画下载任务。"
 
 msgid "No manga in this library category."
 msgstr "此书架分类中没有漫画。"
@@ -1289,6 +1364,9 @@ msgstr "密码"
 msgid "Pause all downloads"
 msgstr "暂停全部下载"
 
+msgid "Pause downloads for this manga"
+msgstr "暂停此漫画的下载"
+
 msgid "Paused"
 msgstr "已暂停"
 
@@ -1315,6 +1393,9 @@ msgstr "排队中"
 msgid "Queued %1 selected chapter download."
 msgid_plural "Queued %1 selected chapter downloads."
 msgstr[0] "已将 %1 个选中章节下载加入队列。"
+
+msgid "Queued downloads"
+msgstr "排队下载"
 
 msgid "Read"
 msgstr "已读"
@@ -1369,6 +1450,10 @@ msgstr "从 Suwayomi 书架移除 %1？"
 msgid "Remove from library"
 msgstr "从书架移除"
 
+msgid ""
+"Removes on-device archives. Server chapters and read state stay unchanged."
+msgstr "移除此设备上的压缩包。服务器章节和阅读状态不会改变。"
+
 msgid "Removing from library..."
 msgstr "正在从书架移除..."
 
@@ -1380,6 +1465,9 @@ msgstr "重置筛选器"
 
 msgid "Resume all downloads"
 msgstr "继续全部下载"
+
+msgid "Resume downloads for this manga"
+msgstr "继续此漫画的下载"
 
 msgid "Retry"
 msgstr "重试"
@@ -1565,6 +1653,9 @@ msgstr "状态"
 msgid "Stay here"
 msgstr "留在此页"
 
+msgid "Stops current work and clears queued chapters for this manga."
+msgstr "停止当前工作并清除此漫画的排队章节。"
+
 msgid "Suwayomi"
 msgstr "Suwayomi"
 
@@ -1706,11 +1797,17 @@ msgstr "此漫画现在无法刷新。"
 msgid "This manga cannot be updated right now."
 msgstr "此漫画现在无法更新。"
 
+msgid "This manga has no active or queued download tasks."
+msgstr "此漫画没有进行中或排队的下载任务。"
+
 msgid "This manga has no chapters loaded."
 msgstr "此漫画没有已加载章节。"
 
 msgid "This manga has no chapters."
 msgstr "此漫画没有章节。"
+
+msgid "This manga has no downloaded chapters to delete."
+msgstr "此漫画没有可删除的已下载章节。"
 
 msgid "This source has no filters."
 msgstr "此源没有筛选器。"
@@ -1736,6 +1833,9 @@ msgstr ""
 msgid "UI Login"
 msgstr "界面登录（UI Login）"
 
+msgid "Undownloaded"
+msgstr "未下载"
+
 msgctxt "extension action"
 msgid "Uninstall"
 msgstr "卸载"
@@ -1748,6 +1848,9 @@ msgstr "未知"
 
 msgid "Unknown error"
 msgstr "未知错误"
+
+msgid "Unknown manga"
+msgstr "未知漫画"
 
 msgid "Unread"
 msgstr "未读"

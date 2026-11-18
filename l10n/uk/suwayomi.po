@@ -65,6 +65,18 @@ msgstr[1] ""
 msgstr[2] ""
 "Виконується %1 завантажень. Після завершення знову позначте як прочитані."
 
+#, fuzzy
+msgid "%1 downloaded"
+msgstr "Завантажено"
+
+#, fuzzy
+msgid "%1 downloading"
+msgstr "Не скасовувати завантаження"
+
+#, fuzzy
+msgid "%1 failed"
+msgstr "не пройдено"
+
 msgid "%1 failed for %2"
 msgstr "Не вдалося виконати %1 для %2"
 
@@ -87,6 +99,10 @@ msgstr[1] ""
 msgstr[2] ""
 "Доступно ще %1 розділів. Виконайте цю дію ще раз, щоб завантажити їх."
 
+#, fuzzy
+msgid "%1 queued"
+msgstr "У черзі"
+
 msgid "%1 result"
 msgid_plural "%1 results"
 msgstr[0] "%1 результат"
@@ -107,6 +123,12 @@ msgid_plural "%1 selected chapters"
 msgstr[0] "%1 вибраний розділ"
 msgstr[1] "%1 вибрані розділи"
 msgstr[2] "%1 вибраних розділів"
+
+msgid "%1 task"
+msgid_plural "%1 tasks"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
 
 msgid "1 selected"
 msgid_plural "%1 selected"
@@ -137,6 +159,10 @@ msgstr "Бібліотека"
 msgid "Actions"
 msgstr "Дії"
 
+#, fuzzy
+msgid "Active downloads"
+msgstr "Скасувати завантаження"
+
 msgid "Add chapter range"
 msgstr ""
 
@@ -145,6 +171,13 @@ msgstr "Додати до бібліотеки"
 
 msgid "Adding to library..."
 msgstr "Додавання до бібліотеки..."
+
+msgid "Adds missing chapters in batches of up to 50."
+msgstr ""
+
+#, fuzzy
+msgid "All chapters"
+msgstr "%1 вибраний розділ"
 
 msgid "All manga"
 msgstr "Уся манґа"
@@ -326,11 +359,17 @@ msgstr "Масові завантаження"
 msgid "Cancel"
 msgstr "Скасувати"
 
+msgid "Cancel %1 active or queued chapter downloads for this manga?"
+msgstr ""
+
 msgid "Cancel all downloads"
 msgstr "Скасувати всі завантаження"
 
 msgid "Cancel all downloads?"
 msgstr "Скасувати всі завантаження?"
+
+msgid "Cancel all tasks for this manga"
+msgstr ""
 
 msgid "Cancel download"
 msgstr "Скасувати завантаження"
@@ -346,6 +385,9 @@ msgstr "Скасувати завантаження в черзі"
 
 msgid "Cancel search"
 msgstr "Скасувати пошук"
+
+msgid "Cancelled %1 downloads; %2 could not be cancelled."
+msgstr ""
 
 msgid "Cannot cancel download: storage is ambiguous"
 msgstr "Неможливо скасувати завантаження: стан сховища неоднозначний"
@@ -691,6 +733,10 @@ msgstr "Не вдалося оновити автозавантаження: %1"
 msgid "Could not update library."
 msgstr "Не вдалося оновити бібліотеку."
 
+#, fuzzy
+msgid "Could not update manga download state: %1"
+msgstr "Не вдалося оновити автозавантаження: %1"
+
 msgid "Could not verify download"
 msgstr "Не вдалося перевірити завантаження"
 
@@ -705,8 +751,16 @@ msgstr ""
 msgid "Cover with text"
 msgstr "Текст пошуку"
 
+msgid "Current active chapter finishes; queued chapters wait."
+msgstr ""
+
 msgid "Delete"
 msgstr "Видалити"
+
+msgid ""
+"Delete %1 downloaded chapter files for this manga? Server chapters and read "
+"state stay unchanged."
+msgstr ""
 
 msgid ""
 "Delete %1 local chapter files and their KOReader sidecars? This cannot be "
@@ -742,6 +796,10 @@ msgstr "Видалити файли прочитаних розділів"
 msgid "Delete chapter settings are unavailable."
 msgstr "Налаштування видалення розділів недоступні."
 
+#, fuzzy
+msgid "Delete downloaded chapters for this manga"
+msgstr "Завантажені розділи збережено в %1."
+
 msgid "Delete downloaded file for %1 from this device?"
 msgstr "Видалити завантажений файл для %1 з цього пристрою?"
 
@@ -770,6 +828,9 @@ msgstr "Видалити файли прочитаних розділів"
 
 msgid "Delete when marked read: %1"
 msgstr "Видаляти після позначення «Прочитано»: %1"
+
+msgid "Deleted %1 downloads; %2 could not be deleted."
+msgstr ""
 
 msgid "Deleted %1 local downloads; %2 skipped or failed."
 msgstr ""
@@ -802,6 +863,10 @@ msgid ""
 "Download belongs to a different server. Restore the original server in "
 "Connection settings, then Retry."
 msgstr ""
+
+#, fuzzy
+msgid "Download chapter filter"
+msgstr "Спочатку завантажте розділ."
 
 msgid "Download damaged; redownload"
 msgstr "Завантажений файл пошкоджено; завантажте заново"
@@ -879,6 +944,10 @@ msgstr ""
 msgid "Download the chapter first."
 msgstr "Спочатку завантажте розділ."
 
+#, fuzzy
+msgid "Download undownloaded chapters"
+msgstr "Не вдалося завантажити розділ заново."
+
 msgid "Download unread (up to 50)"
 msgstr "Завантажити непрочитані (до 50)"
 
@@ -896,6 +965,10 @@ msgstr "Завантаження %1"
 
 msgid "Downloading %1/%2"
 msgstr "Завантаження %1/%2"
+
+#, fuzzy
+msgid "Downloading or queued"
+msgstr "Завантаження вже не в черзі."
 
 msgid "Downloads"
 msgstr "Завантаження"
@@ -974,6 +1047,10 @@ msgstr "Час очікування оновлення розширення ми
 msgid "Failed"
 msgstr "Невдало"
 
+#, fuzzy
+msgid "Failed downloads"
+msgstr "Скасувати завантаження"
+
 msgid "Failed to queue %1 chapter download."
 msgid_plural "Failed to queue %1 chapter downloads."
 msgstr[0] "Не вдалося додати в чергу %1 завантаження розділу."
@@ -994,6 +1071,10 @@ msgstr "Фільтр"
 
 msgid "Filter name"
 msgstr "Назва фільтра"
+
+#, fuzzy
+msgid "Filter: %1"
+msgstr "Фільтр"
 
 msgid "Finishing and deletion"
 msgstr "Завершення читання та видалення"
@@ -1242,6 +1323,10 @@ msgstr "Наступна спроба: %1"
 msgid "No actions available"
 msgstr "Немає доступних дій"
 
+#, fuzzy
+msgid "No active download tasks"
+msgstr "Скасувати завантаження"
+
 msgid "No chapters available to download."
 msgstr "Немає розділів, доступних для завантаження."
 
@@ -1258,6 +1343,10 @@ msgid ""
 msgstr ""
 "Жоден розділ не відповідає збереженому фільтру сканлейтора. Інших "
 "сканлейторів не вибрано."
+
+#, fuzzy
+msgid "No chapters match this filter."
+msgstr "Жодна манґа не відповідає цим фільтрам."
 
 msgid "No chapters selected."
 msgstr "Розділи не вибрано."
@@ -1287,6 +1376,10 @@ msgstr "Подробиці помилки не збережено."
 #, fuzzy
 msgid "No local chapter archives found."
 msgstr "Завантажені розділи збережено в %1."
+
+#, fuzzy
+msgid "No manga download tasks."
+msgstr "Нові завантаження не додано в чергу."
 
 msgid "No manga in this library category."
 msgstr "У цій категорії бібліотеки немає манґи."
@@ -1418,6 +1511,10 @@ msgstr "Пароль"
 msgid "Pause all downloads"
 msgstr "Скасувати всі завантаження"
 
+#, fuzzy
+msgid "Pause downloads for this manga"
+msgstr "Скасувати всі завантаження"
+
 msgid "Paused"
 msgstr ""
 
@@ -1448,6 +1545,10 @@ msgid_plural "Queued %1 selected chapter downloads."
 msgstr[0] "Додано в чергу завантаження %1 вибраного розділу."
 msgstr[1] "Додано в чергу завантаження %1 вибраних розділів."
 msgstr[2] "Додано в чергу завантаження %1 вибраних розділів."
+
+#, fuzzy
+msgid "Queued downloads"
+msgstr "Видалити завантаження"
 
 msgid "Read"
 msgstr "Прочитано"
@@ -1509,6 +1610,10 @@ msgstr "Вилучити %1 з вашої бібліотеки Suwayomi?"
 msgid "Remove from library"
 msgstr "Вилучити з бібліотеки"
 
+msgid ""
+"Removes on-device archives. Server chapters and read state stay unchanged."
+msgstr ""
+
 msgid "Removing from library..."
 msgstr "Вилучення з бібліотеки..."
 
@@ -1520,6 +1625,10 @@ msgstr "Скинути фільтри"
 
 #, fuzzy
 msgid "Resume all downloads"
+msgstr "Скасувати всі завантаження"
+
+#, fuzzy
+msgid "Resume downloads for this manga"
 msgstr "Скасувати всі завантаження"
 
 msgid "Retry"
@@ -1721,6 +1830,9 @@ msgstr "Статус"
 msgid "Stay here"
 msgstr ""
 
+msgid "Stops current work and clears queued chapters for this manga."
+msgstr ""
+
 msgid "Suwayomi"
 msgstr "Suwayomi"
 
@@ -1868,11 +1980,19 @@ msgstr "Цю манґу зараз не можна оновити."
 msgid "This manga cannot be updated right now."
 msgstr "Цю манґу зараз не можна оновити."
 
+#, fuzzy
+msgid "This manga has no active or queued download tasks."
+msgstr "Для цієї манґи не завантажено розділів."
+
 msgid "This manga has no chapters loaded."
 msgstr "Для цієї манґи не завантажено розділів."
 
 msgid "This manga has no chapters."
 msgstr "У цієї манґи немає розділів."
+
+#, fuzzy
+msgid "This manga has no downloaded chapters to delete."
+msgstr "Для цієї манґи не завантажено розділів."
 
 msgid "This source has no filters."
 msgstr "Це джерело не має фільтрів."
@@ -1899,6 +2019,10 @@ msgstr ""
 msgid "UI Login"
 msgstr "Вхід UI Login"
 
+#, fuzzy
+msgid "Undownloaded"
+msgstr "Завантажено"
+
 msgctxt "extension action"
 msgid "Uninstall"
 msgstr "Видалити"
@@ -1911,6 +2035,10 @@ msgstr "Невідомо"
 
 msgid "Unknown error"
 msgstr "Невідома помилка"
+
+#, fuzzy
+msgid "Unknown manga"
+msgstr "Невідомо"
 
 msgid "Unread"
 msgstr "Непрочитано"

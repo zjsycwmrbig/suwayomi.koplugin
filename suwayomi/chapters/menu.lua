@@ -33,7 +33,7 @@ local function copyTitleBarOptions(target, title_options)
     return target
 end
 
-local function hasCancelableDownloads(self)
+local function hasCancelableDownloads(self, manga)
     if not self.getDownloadQueue then
         return false
     end
@@ -42,7 +42,17 @@ local function hasCancelableDownloads(self)
         return false
     end
     local snapshot = queue:getSnapshot() or {}
-    return #(snapshot.active or {}) > 0 or #(snapshot.queued or {}) > 0 or #(snapshot.refills or {}) > 0
+    if not manga then
+        return #(snapshot.active or {}) > 0 or #(snapshot.queued or {}) > 0 or #(snapshot.refills or {}) > 0
+    end
+    local manga_id = tostring(manga.id or manga.title or "")
+    for _, collection in ipairs({ snapshot.active or {}, snapshot.queued or {} }) do
+        for _, job in ipairs(collection) do
+            local job_manga = job.manga or {}
+            if tostring(job_manga.id or job_manga.title or "") == manga_id then return true end
+        end
+    end
+    return false
 end
 
 -- Controllers expose new(deps) for a consistent boundary; methods remain plugin-bound mixins so this refactor can move code without changing callback behavior.
@@ -54,6 +64,41 @@ function ChapterMenu:new(deps)
 end
 
 local Methods = {}
+local DOWNLOAD_FILTERS = {
+    all = "All chapters",
+    undownloaded = "Undownloaded",
+    downloaded = "Downloaded",
+    failed = "Failed",
+    active = "Downloading or queued",
+}
+
+function Methods:getDownloadManagerFilter()
+    local filter = self.download_manager_filter
+    return DOWNLOAD_FILTERS[filter] and filter or nil
+end
+
+function Methods:formatDownloadManagerFilterLabel(filter)
+    return I18n.t(DOWNLOAD_FILTERS[filter or self:getDownloadManagerFilter() or "all"])
+end
+
+local function filterPreparedChapters(prepared, filter)
+    if not filter or filter == "all" then return prepared end
+    local filtered = {}
+    for _, display in ipairs(prepared or {}) do
+        local status = display.status or {}
+        local state = status.state
+        local downloaded = state == "downloaded" or state == "skipped"
+        local active = state == "queued" or state == "downloading" or state == "running"
+            or state == "stopping" or state == "finalizing"
+        local failed = state == "failed"
+        local include = filter == "downloaded" and downloaded
+            or filter == "failed" and failed
+            or filter == "active" and active
+            or filter == "undownloaded" and not downloaded and not active and not failed
+        if include then filtered[#filtered + 1] = display end
+    end
+    return filtered
+end
 
 local function reportExpiredChapterAction(owner)
     if owner.suwayomi_host_retired then return false end
@@ -106,7 +151,10 @@ function Methods:getChapterTitleBarMenuOptions(manga, lookup)
     local context = self.current_chapter_context
     local manga_id = manga and tostring(manga.id or manga.title)
     return self:getTitleBarMenuOptions({
-        title = self:formatChapterListTitle(manga),
+        title = self:formatChapterListTitle(manga)
+            .. (self:getDownloadManagerFilter()
+                and " - " .. self:formatDownloadManagerFilterLabel()
+                or ""),
         actions = self:getBulkChapterActions(lookup),
         vertical = true,
         destructive_actions_at_bottom = true,
@@ -281,6 +329,8 @@ function Methods:buildChapterMenuOptions(manga, chapters, ledger, options)
     local lookup = self.buildChapterDownloadLookup and self:buildChapterDownloadLookup(manga, read_ledger)
     local prepared, err = self:prepareChapterMenuItems(manga, visible_chapters, ledger, options, lookup, read_ledger)
     if not prepared then return nil, err end
+    local filter = options and options.download_manager_filter or self:getDownloadManagerFilter()
+    prepared = filterPreparedChapters(prepared, filter)
 
     return copyTitleBarOptions({
         title = self.formatChapterListScreenTitle and self:formatChapterListScreenTitle(manga) or I18n.t("Chapters"),
@@ -446,6 +496,13 @@ function Methods:getBulkChapterActions(lookup)
     end
     local show_scanlator_filter = self.current_scanlator_filter ~= nil
         or #(self:getChapterScanlatorChoices((self.current_chapter_context and self.current_chapter_context.chapters) or {})) > 0
+    if self:getDownloadManagerFilter() then
+        table.insert(actions, {
+            id = "download_filter",
+            text = I18n.f("Filter: %1", self:formatDownloadManagerFilterLabel()),
+            submenu = true,
+        })
+    end
     if local_only then
         table.insert(actions, self:getSelectedChapterCount() > 0
             and { id = "clear_selection", text = I18n.t("Clear selection") }
@@ -484,8 +541,10 @@ function Methods:getBulkChapterActions(lookup)
         if show_scanlator_filter then
             table.insert(actions, { id = "scanlator_filter", text = I18n.t("Scanlator filter"), submenu = true })
         end
-        if hasCancelableDownloads(self) then
-            table.insert(actions, { id = "cancel_all_downloads", text = I18n.t("Cancel all downloads"), destructive = true })
+        if hasCancelableDownloads(self, context and context.manga) then
+            table.insert(actions, self:getDownloadManagerFilter()
+                and { id = "cancel_manga_downloads", text = I18n.t("Cancel all tasks for this manga"), destructive = true }
+                or { id = "cancel_all_downloads", text = I18n.t("Cancel all downloads"), destructive = true })
         end
         table.insert(actions, { id = "delete_selected", text = I18n.t("Delete downloads"), destructive = true })
         return actions
@@ -507,8 +566,10 @@ function Methods:getBulkChapterActions(lookup)
     if show_scanlator_filter then
         table.insert(actions, { id = "scanlator_filter", text = I18n.t("Scanlator filter"), submenu = true })
     end
-    if hasCancelableDownloads(self) then
-        table.insert(actions, { id = "cancel_all_downloads", text = I18n.t("Cancel all downloads"), destructive = true })
+    if hasCancelableDownloads(self, context and context.manga) then
+        table.insert(actions, self:getDownloadManagerFilter()
+            and { id = "cancel_manga_downloads", text = I18n.t("Cancel all tasks for this manga"), destructive = true }
+            or { id = "cancel_all_downloads", text = I18n.t("Cancel all downloads"), destructive = true })
     end
 
     return actions
@@ -559,6 +620,31 @@ function Methods:showScanlatorFilterActions(menu_context)
         else
             self:setScanlatorFilter(action.scanlator)
         end
+    end))
+    return true
+end
+
+function Methods:showDownloadManagerFilterActions(menu_context)
+    if not SuwayomiUI.showChapterActionsMenu then return false end
+    local actions = {}
+    local selected = self:getDownloadManagerFilter() or "all"
+    for _, filter in ipairs({ "undownloaded", "downloaded", "failed", "active", "all" }) do
+        actions[#actions + 1] = {
+            id = filter,
+            text = (filter == selected and "● " or "") .. self:formatDownloadManagerFilterLabel(filter),
+        }
+    end
+    SuwayomiUI.showChapterActionsMenu({
+        title = I18n.t("Download chapter filter"),
+        actions = actions,
+        anchor = menu_context and menu_context.anchor,
+        on_back = guardChapterCallback(self, function()
+            self:showBulkChapterActions(menu_context)
+        end),
+    }, guardChapterCallback(self, function(action)
+        if self.clearChapterSelection then self:clearChapterSelection(true) end
+        self.download_manager_filter = action.id
+        self:refreshChapterMenu()
     end))
     return true
 end
@@ -657,7 +743,7 @@ function Methods:refreshChapterMenu(options)
     if options.saved == nil then options.saved = self.current_chapter_context.saved end
     self.pending_chapter_menu_refresh = false
 
-    local menu_options_builder = options.quick
+    local menu_options_builder = options.quick and not self:getDownloadManagerFilter()
         and self.buildQuickChapterMenuOptions
         or self.buildChapterMenuOptions
     local menu_options = menu_options_builder(

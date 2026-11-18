@@ -13,6 +13,10 @@ local StatusFormatter = require("suwayomi/downloads/status_formatter")
 local menu_utils = require("suwayomi/ui/menu_utils")
 
 local DownloadsUI = {}
+local formatDownloadProgress
+local formatFailedDownloadText
+local formatRefillReason
+local formatRefillState
 
 function DownloadsUI.showLocalDownloads(items, selected, options)
     local list_menu = require("suwayomi/ui/list_menu")
@@ -140,7 +144,148 @@ local function formatDownloadJobLabel(job)
     return label
 end
 
-local function formatDownloadProgress(job)
+local function getMangaGroupKey(manga)
+    if type(manga) ~= "table" then return "" end
+    return tostring(manga.id or manga.title or "")
+end
+
+local function getMangaGroupTitle(manga, fallback)
+    if type(manga) == "table" and manga.title and manga.title ~= "" then
+        return tostring(manga.title)
+    end
+    return fallback or I18n.t("Unknown manga")
+end
+
+local function appendMangaJob(groups, job, state)
+    local manga = job and job.manga or {}
+    local key = getMangaGroupKey(manga)
+    if key == "" then key = tostring(job and job.key or "unknown") end
+    local group = groups[key]
+    if not group then
+        group = { key = key, manga = manga, jobs = {}, active = 0, queued = 0, failed = 0 }
+        groups[key] = group
+    end
+    group.jobs[#group.jobs + 1] = job
+    group[state] = group[state] + 1
+end
+
+function DownloadsUI.groupDownloadJobs(snapshot)
+    local groups = {}
+    for _, job in ipairs(snapshot and snapshot.active or {}) do appendMangaJob(groups, job, "active") end
+    for _, job in ipairs(snapshot and snapshot.queued or {}) do appendMangaJob(groups, job, "queued") end
+    for _, job in ipairs(snapshot and snapshot.failed or {}) do appendMangaJob(groups, job, "failed") end
+    for _, item in ipairs(snapshot and snapshot.local_downloads or {}) do
+        local manga = item.manga or {}
+        local key = getMangaGroupKey(manga)
+        if key == "" then key = item.key or item.label or item.path end
+        local group = groups[key]
+        if not group then
+            group = { key = key, manga = manga, jobs = {}, active = 0, queued = 0, failed = 0, downloaded = 0 }
+            groups[key] = group
+        end
+        group.jobs[#group.jobs + 1] = {
+            key = item.key, manga = manga, chapter = item.chapter, state = "downloaded",
+            local_item = item, progress = {},
+        }
+        group.downloaded = (group.downloaded or 0) + 1
+    end
+    for _, request in ipairs(snapshot and snapshot.refills or {}) do
+        local key = tostring(request.manga_id or request.manga_title or "")
+        if key ~= "" then
+            local group = groups[key]
+            if not group then
+                group = {
+                    key = key,
+                    manga = { id = request.manga_id, title = request.manga_title },
+                    jobs = {}, active = 0, queued = 0, failed = 0,
+                }
+                groups[key] = group
+            end
+            group.refill = request
+        end
+    end
+    local result = {}
+    for key, group in pairs(groups) do
+        group.paused = snapshot and snapshot.paused_mangas and snapshot.paused_mangas[key] == true
+        result[#result + 1] = group
+    end
+    table.sort(result, function(a, b) return getMangaGroupTitle(a.manga, a.key) < getMangaGroupTitle(b.manga, b.key) end)
+    return result
+end
+
+function DownloadsUI.buildDownloadMangaMenuTable(groups, options)
+    options = options or {}
+    local rows = {}
+    for _, group in ipairs(groups or {}) do
+        local counts = {}
+        if group.active > 0 then counts[#counts + 1] = I18n.f("%1 downloading", group.active) end
+        if group.queued > 0 then counts[#counts + 1] = I18n.f("%1 queued", group.queued) end
+        if group.failed > 0 then counts[#counts + 1] = I18n.f("%1 failed", group.failed) end
+        if (group.downloaded or 0) > 0 then counts[#counts + 1] = I18n.f("%1 downloaded", group.downloaded) end
+        if group.refill then counts[#counts + 1] = formatRefillState(group.refill.state) end
+        if group.paused then table.insert(counts, 1, I18n.t("Paused")) end
+        local subtitle = #counts > 0 and table.concat(counts, " · ") or I18n.t("No active download tasks")
+        if group.refill and group.refill.next_retry_at then
+            subtitle = subtitle .. "\\n" .. StatusFormatter.formatRetryTime(group.refill.next_retry_at)
+        end
+        rows[#rows + 1] = {
+            text = getMangaGroupTitle(group.manga, group.key),
+            subtitle = subtitle,
+            mandatory = #group.jobs > 0 and I18n.count(#group.jobs, "%1 task", "%1 tasks")
+                or I18n.t("Auto-download"),
+            manga = group.manga,
+            thumbnail_url = group.manga.thumbnail_url,
+            thumbnail_placeholder = true,
+            thumbnail_variant = "manga_cover",
+            thumbnail_width = 64,
+            thumbnail_height = 96,
+            download_group = group,
+            keep_menu_open = true,
+            callback = function(menu)
+                if options.on_select then return options.on_select(group, menu) end
+            end,
+        }
+    end
+    if #rows == 0 then
+        rows[1] = { text = I18n.t("No manga download tasks."), select_enabled = false }
+    end
+    return rows
+end
+
+function DownloadsUI.buildDownloadMangaDetailTable(group, options)
+    options = options or {}
+    local rows = {}
+    local filter = options.filter or "all"
+    for _, job in ipairs(group and group.jobs or {}) do
+        local state = job.state or "queued"
+        local include = filter == "all"
+            or filter == "active" and state == "downloading"
+            or filter == "queued" and state == "queued"
+            or filter == "failed" and state == "failed"
+            or filter == "downloaded" and state == "downloaded"
+        if include then
+            rows[#rows + 1] = {
+                text = formatDownloadJobLabel(job),
+                subtitle = state == "failed" and formatFailedDownloadText(job)
+                    or StatusFormatter.formatArchiveStatus(job.progress),
+                mandatory = state == "downloading" and (I18n.t("Downloading")
+                    .. (formatDownloadProgress(job) ~= "" and (" " .. formatDownloadProgress(job)) or ""))
+                    or I18n.t(state == "failed" and "Failed" or state == "downloaded" and "Downloaded" or "Queued"),
+                keep_menu_open = true,
+                job = job,
+                callback = function(menu)
+                    if options.on_select then options.on_select(job, menu) end
+                end,
+            }
+        end
+    end
+    if #rows == 0 then
+        rows[1] = { text = I18n.t("No chapters match this filter."), select_enabled = false }
+    end
+    return rows
+end
+
+formatDownloadProgress = function(job)
     local progress = job and job.progress or nil
     local current = progress and tonumber(progress.current) or nil
     local total = progress and tonumber(progress.total) or nil
@@ -150,12 +295,12 @@ local function formatDownloadProgress(job)
     return ""
 end
 
-local function formatFailedDownloadText(job)
+formatFailedDownloadText = function(job)
     local summary = getErrorText(job):gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
     return StatusFormatter.shortenChapterTitle(summary, 0, 100)
 end
 
-local function formatRefillReason(reason)
+formatRefillReason = function(reason)
     if reason == "endpoint_changed" then
         return I18n.t("Server changed. Open this manga on the current server and choose Auto-download again.")
     elseif reason == "origin_unknown" then
@@ -186,7 +331,7 @@ local function formatRefillReason(reason)
     return I18n.t("Waiting to check which unread chapters need downloading.")
 end
 
-local function formatRefillState(state)
+formatRefillState = function(state)
     if state == "blocked" then
         return I18n.t("Auto-download blocked")
     elseif state == "waiting" then
@@ -204,7 +349,7 @@ function DownloadsUI.formatRefillStatus(request)
     return text
 end
 
-local function showRefillDetails(request, callbacks)
+function DownloadsUI.showRefillDetails(request, callbacks)
     local TextViewer = require("ui/widget/textviewer")
     local UIManager = require("ui/uimanager")
     local text = DownloadsUI.formatRefillStatus(request)
@@ -265,6 +410,8 @@ local function buildMenuOptions(snapshot, callbacks, options)
     return {
         title = options.title or I18n.t("Suwayomi Downloads"),
         bottom_navigation = options.bottom_navigation,
+        view_mode = options.view_mode,
+        thumbnail_credentials = options.thumbnail_credentials,
         title_bar_left_icon = options.title_bar_left_icon,
         item_table = DownloadsUI.buildDownloadsMenuTable(snapshot, callbacks, options),
         close_callback = options.close_callback,
@@ -379,7 +526,7 @@ function DownloadsUI.buildDownloadsMenuTable(snapshot, callbacks, options)
             subtitle = subtitle,
             callback = function()
                 if callbacks.refill_is_current and not callbacks.refill_is_current(request) then return end
-                showRefillDetails(request, callbacks)
+                DownloadsUI.showRefillDetails(request, callbacks)
             end,
         })
     end
@@ -406,7 +553,128 @@ function DownloadsUI.buildDownloadsMenuTable(snapshot, callbacks, options)
     return menu_table
 end
 
+function DownloadsUI.showDownloadMangaDetail(group, callbacks, options)
+    options = options or {}
+    local list_menu = getListMenu()
+    local rows = {}
+    local filters = {
+        { id = "all", text = I18n.t("All chapters") },
+        { id = "undownloaded", text = I18n.t("Undownloaded") },
+        { id = "downloaded", text = I18n.t("Downloaded"), count = group and (group.downloaded or 0) },
+        { id = "failed", text = I18n.t("Failed"), count = group and group.failed or 0 },
+        { id = "active", text = I18n.t("Downloading or queued"),
+            count = group and ((group.active or 0) + (group.queued or 0)) },
+    }
+    for _, choice in ipairs(filters) do
+        rows[#rows + 1] = {
+            text = choice.text,
+            mandatory = choice.count and I18n.count(choice.count, "%1 chapter", "%1 chapters") or nil,
+            keep_menu_open = true,
+            callback = function(menu)
+                if callbacks and callbacks.onFilter then callbacks.onFilter(group, choice.id, menu) end
+            end,
+        }
+    end
+    if group and group.refill then
+        rows[#rows + 1] = {
+            text = formatRefillState(group.refill.state),
+            subtitle = formatRefillReason(group.refill.reason),
+            refill = group.refill,
+            keep_menu_open = true,
+            callback = function(menu)
+                if callbacks and callbacks.onSelectRefill then
+                    callbacks.onSelectRefill(group.refill, menu)
+                end
+            end,
+        }
+    end
+    rows[#rows + 1] = {
+        text = I18n.t("Download undownloaded chapters"),
+        subtitle = I18n.t("Adds missing chapters in batches of up to 50."),
+        keep_menu_open = true,
+        callback = function(menu)
+            if callbacks and callbacks.onDownloadUndownloaded then
+                callbacks.onDownloadUndownloaded(group, menu)
+            end
+        end,
+    }
+    rows[#rows + 1] = {
+        text = group and group.paused and I18n.t("Resume downloads for this manga")
+            or I18n.t("Pause downloads for this manga"),
+        subtitle = I18n.t("Current active chapter finishes; queued chapters wait."),
+        destructive = group and group.paused ~= true,
+        keep_menu_open = true,
+        callback = function(menu)
+            if callbacks and callbacks.onTogglePause then callbacks.onTogglePause(group, menu) end
+        end,
+    }
+    rows[#rows + 1] = {
+        text = I18n.t("Cancel all tasks for this manga"),
+        subtitle = I18n.t("Stops current work and clears queued chapters for this manga."),
+        destructive = true,
+        keep_menu_open = true,
+        callback = function(menu)
+            if callbacks and callbacks.onCancelTasks then callbacks.onCancelTasks(group, menu) end
+        end,
+    }
+    rows[#rows + 1] = {
+        text = I18n.t("Delete downloaded chapters for this manga"),
+        subtitle = I18n.t("Removes on-device archives. Server chapters and read state stay unchanged."),
+        destructive = true,
+        keep_menu_open = true,
+        callback = function(menu)
+            if callbacks and callbacks.onDeleteDownloads then callbacks.onDeleteDownloads(group, menu) end
+        end,
+    }
+    for _, filter in ipairs({ "active", "queued", "failed" }) do
+        local task_rows = DownloadsUI.buildDownloadMangaDetailTable(group, {
+            filter = filter,
+            on_select = callbacks and callbacks.onSelectJob,
+        })
+        if not (task_rows[1] and task_rows[1].select_enabled == false) then
+            local headings = {
+                active = I18n.t("Active downloads"),
+                queued = I18n.t("Queued downloads"),
+                failed = I18n.t("Failed downloads"),
+            }
+            rows[#rows + 1] = { text = headings[filter], select_enabled = false }
+            for _, row in ipairs(task_rows) do rows[#rows + 1] = row end
+        end
+    end
+    local menu_options = {
+        title = getMangaGroupTitle(group and group.manga),
+        item_table = rows,
+        title_bar_left_icon = options.title_bar_left_icon,
+        on_title_bar_left_tap = options.on_title_bar_left_tap,
+        close_callback = options.close_callback,
+        bottom_navigation = options.bottom_navigation,
+    }
+    local menu = list_menu.show(menu_options)
+    menu_utils.bindMenuCallbacks(rows, menu)
+    return menu
+end
+
 function DownloadsUI.showDownloadsMenu(snapshot, callbacks, options)
+    options = options or {}
+    if options.grouped_by_manga then
+        local groups = DownloadsUI.groupDownloadJobs(snapshot)
+        local rows = DownloadsUI.buildDownloadMangaMenuTable(groups, {
+            on_select = callbacks and callbacks.onSelectManga,
+        })
+        local menu = getListMenu().show({
+            title = options.title or I18n.t("Downloads"),
+            bottom_navigation = options.bottom_navigation,
+            view_mode = options.view_mode,
+            thumbnail_credentials = options.thumbnail_credentials,
+            title_bar_left_icon = options.title_bar_left_icon,
+            on_title_bar_left_tap = options.on_title_bar_left_tap,
+            on_title_bar_left_hold = options.on_title_bar_left_hold,
+            close_callback = options.close_callback,
+            item_table = rows,
+        })
+        menu_utils.bindMenuCallbacks(rows, menu)
+        return menu
+    end
     local menu_options = buildMenuOptions(snapshot, callbacks, options)
     local menu = getListMenu().show(menu_options)
     menu_utils.bindMenuCallbacks(menu.item_table, menu)
@@ -418,6 +686,12 @@ function DownloadsUI.updateDownloadsMenu(menu, snapshot, callbacks, options)
         return
     end
     local menu_options = buildMenuOptions(snapshot, callbacks, options)
+    if options and options.grouped_by_manga then
+        menu_options.item_table = DownloadsUI.buildDownloadMangaMenuTable(
+            DownloadsUI.groupDownloadJobs(snapshot),
+            { on_select = callbacks and callbacks.onSelectManga }
+        )
+    end
     menu_utils.bindMenuCallbacks(menu_options.item_table, menu)
     return getListMenu().update(menu, menu_options)
 end

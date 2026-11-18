@@ -58,9 +58,12 @@ SuwayomiUI.updateLibraryMangaMenu = BrowseUI.updateLibraryMangaMenu
 
 SuwayomiUI.buildDownloadsMenuTable = DownloadsUI.buildDownloadsMenuTable
 SuwayomiUI.showDownloadsMenu = DownloadsUI.showDownloadsMenu
+SuwayomiUI.showDownloadMangaDetail = DownloadsUI.showDownloadMangaDetail
+SuwayomiUI.groupDownloadJobs = DownloadsUI.groupDownloadJobs
 SuwayomiUI.showLocalDownloads = DownloadsUI.showLocalDownloads
 SuwayomiUI.updateDownloadsMenu = DownloadsUI.updateDownloadsMenu
 SuwayomiUI.showDownloadErrorDetails = DownloadsUI.showDownloadErrorDetails
+SuwayomiUI.showDownloadRefillDetails = DownloadsUI.showRefillDetails
 SuwayomiUI.formatRefillStatus = DownloadsUI.formatRefillStatus
 SuwayomiUI.showAutoMarkPrompt = DownloadsUI.showAutoMarkPrompt
 SuwayomiUI.buildMangaInformationText = MangaInfoUI.buildText

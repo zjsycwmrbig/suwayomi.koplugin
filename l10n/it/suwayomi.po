@@ -56,6 +56,15 @@ msgid_plural "%1 downloads are busy. Mark them read again after they finish."
 msgstr[0] ""
 msgstr[1] ""
 
+msgid "%1 downloaded"
+msgstr ""
+
+msgid "%1 downloading"
+msgstr ""
+
+msgid "%1 failed"
+msgstr ""
+
 msgid "%1 failed for %2"
 msgstr ""
 
@@ -73,6 +82,9 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
+msgid "%1 queued"
+msgstr ""
+
 msgid "%1 result"
 msgid_plural "%1 results"
 msgstr[0] ""
@@ -88,6 +100,11 @@ msgstr[1] ""
 
 msgid "%1 selected chapter"
 msgid_plural "%1 selected chapters"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "%1 task"
+msgid_plural "%1 tasks"
 msgstr[0] ""
 msgstr[1] ""
 
@@ -111,6 +128,9 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
+msgid "Active downloads"
+msgstr ""
+
 msgid "Add chapter range"
 msgstr ""
 
@@ -118,6 +138,12 @@ msgid "Add to library"
 msgstr ""
 
 msgid "Adding to library..."
+msgstr ""
+
+msgid "Adds missing chapters in batches of up to 50."
+msgstr ""
+
+msgid "All chapters"
 msgstr ""
 
 msgid "All manga"
@@ -277,10 +303,16 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
+msgid "Cancel %1 active or queued chapter downloads for this manga?"
+msgstr ""
+
 msgid "Cancel all downloads"
 msgstr ""
 
 msgid "Cancel all downloads?"
+msgstr ""
+
+msgid "Cancel all tasks for this manga"
 msgstr ""
 
 msgid "Cancel download"
@@ -296,6 +328,9 @@ msgid "Cancel queued download"
 msgstr ""
 
 msgid "Cancel search"
+msgstr ""
+
+msgid "Cancelled %1 downloads; %2 could not be cancelled."
 msgstr ""
 
 msgid "Cannot cancel download: storage is ambiguous"
@@ -588,6 +623,9 @@ msgstr ""
 msgid "Could not update library."
 msgstr ""
 
+msgid "Could not update manga download state: %1"
+msgstr ""
+
 msgid "Could not verify download"
 msgstr ""
 
@@ -600,7 +638,15 @@ msgstr ""
 msgid "Cover with text"
 msgstr ""
 
+msgid "Current active chapter finishes; queued chapters wait."
+msgstr ""
+
 msgid "Delete"
+msgstr ""
+
+msgid ""
+"Delete %1 downloaded chapter files for this manga? Server chapters and read "
+"state stay unchanged."
 msgstr ""
 
 msgid ""
@@ -633,6 +679,9 @@ msgstr ""
 msgid "Delete chapter settings are unavailable."
 msgstr ""
 
+msgid "Delete downloaded chapters for this manga"
+msgstr ""
+
 msgid "Delete downloaded file for %1 from this device?"
 msgstr ""
 
@@ -658,6 +707,9 @@ msgid "Delete selected local downloads"
 msgstr ""
 
 msgid "Delete when marked read: %1"
+msgstr ""
+
+msgid "Deleted %1 downloads; %2 could not be deleted."
 msgstr ""
 
 msgid "Deleted %1 local downloads; %2 skipped or failed."
@@ -689,6 +741,9 @@ msgstr ""
 msgid ""
 "Download belongs to a different server. Restore the original server in "
 "Connection settings, then Retry."
+msgstr ""
+
+msgid "Download chapter filter"
 msgstr ""
 
 msgid "Download damaged; redownload"
@@ -761,6 +816,9 @@ msgstr ""
 msgid "Download the chapter first."
 msgstr ""
 
+msgid "Download undownloaded chapters"
+msgstr ""
+
 msgid "Download unread (up to 50)"
 msgstr ""
 
@@ -777,6 +835,9 @@ msgid "Downloading %1"
 msgstr ""
 
 msgid "Downloading %1/%2"
+msgstr ""
+
+msgid "Downloading or queued"
 msgstr ""
 
 msgid "Downloads"
@@ -855,6 +916,9 @@ msgstr ""
 msgid "Failed"
 msgstr ""
 
+msgid "Failed downloads"
+msgstr ""
+
 msgid "Failed to queue %1 chapter download."
 msgid_plural "Failed to queue %1 chapter downloads."
 msgstr[0] ""
@@ -873,6 +937,9 @@ msgid "Filter"
 msgstr ""
 
 msgid "Filter name"
+msgstr ""
+
+msgid "Filter: %1"
 msgstr ""
 
 msgid "Finishing and deletion"
@@ -1104,6 +1171,9 @@ msgstr ""
 msgid "No actions available"
 msgstr ""
 
+msgid "No active download tasks"
+msgstr ""
+
 msgid "No chapters available to download."
 msgstr ""
 
@@ -1115,6 +1185,9 @@ msgstr ""
 msgid ""
 "No chapters match the saved scanlator filter. Other scanlators are not "
 "selected."
+msgstr ""
+
+msgid "No chapters match this filter."
 msgstr ""
 
 msgid "No chapters selected."
@@ -1141,6 +1214,9 @@ msgid "No error details were recorded."
 msgstr ""
 
 msgid "No local chapter archives found."
+msgstr ""
+
+msgid "No manga download tasks."
 msgstr ""
 
 msgid "No manga in this library category."
@@ -1262,6 +1338,9 @@ msgstr ""
 msgid "Pause all downloads"
 msgstr ""
 
+msgid "Pause downloads for this manga"
+msgstr ""
+
 msgid "Paused"
 msgstr ""
 
@@ -1290,6 +1369,9 @@ msgid "Queued %1 selected chapter download."
 msgid_plural "Queued %1 selected chapter downloads."
 msgstr[0] ""
 msgstr[1] ""
+
+msgid "Queued downloads"
+msgstr ""
 
 msgid "Read"
 msgstr ""
@@ -1344,6 +1426,10 @@ msgstr ""
 msgid "Remove from library"
 msgstr ""
 
+msgid ""
+"Removes on-device archives. Server chapters and read state stay unchanged."
+msgstr ""
+
 msgid "Removing from library..."
 msgstr ""
 
@@ -1354,6 +1440,9 @@ msgid "Reset filters"
 msgstr ""
 
 msgid "Resume all downloads"
+msgstr ""
+
+msgid "Resume downloads for this manga"
 msgstr ""
 
 msgid "Retry"
@@ -1540,6 +1629,9 @@ msgstr ""
 msgid "Stay here"
 msgstr ""
 
+msgid "Stops current work and clears queued chapters for this manga."
+msgstr ""
+
 msgid "Suwayomi"
 msgstr ""
 
@@ -1680,10 +1772,16 @@ msgstr ""
 msgid "This manga cannot be updated right now."
 msgstr ""
 
+msgid "This manga has no active or queued download tasks."
+msgstr ""
+
 msgid "This manga has no chapters loaded."
 msgstr ""
 
 msgid "This manga has no chapters."
+msgstr ""
+
+msgid "This manga has no downloaded chapters to delete."
 msgstr ""
 
 msgid "This source has no filters."
@@ -1709,6 +1807,9 @@ msgstr ""
 msgid "UI Login"
 msgstr ""
 
+msgid "Undownloaded"
+msgstr ""
+
 msgctxt "extension action"
 msgid "Uninstall"
 msgstr ""
@@ -1720,6 +1821,9 @@ msgid "Unknown"
 msgstr ""
 
 msgid "Unknown error"
+msgstr ""
+
+msgid "Unknown manga"
 msgstr ""
 
 msgid "Unread"

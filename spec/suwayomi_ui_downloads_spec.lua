@@ -128,6 +128,61 @@ describe("suwayomi/ui/downloads", function()
         assert.are.equal("Clear failed", rows[4].text)
     end)
 
+    it("groups tasks by manga and includes downloaded chapters", function()
+        local downloads = require("suwayomi/ui/downloads")
+        local groups = downloads.groupDownloadJobs({
+            active = {
+                { key = "1:10", manga = { id = 1, title = "One" }, chapter = { name = "10" }, progress = {} },
+            },
+            queued = {
+                { key = "2:20", manga = { id = 2, title = "Two" }, chapter = { name = "20" }, progress = {} },
+            },
+            failed = {
+                { key = "1:11", manga = { id = 1, title = "One" }, chapter = { name = "11" }, progress = { error = "offline" } },
+            },
+            local_downloads = {
+                { key = "1:9", manga = { id = 1, title = "One" }, chapter = { name = "9" }, path = "/books/9.cbz" },
+            },
+            paused_mangas = { ["1"] = true },
+        })
+
+        assert.are.equal(2, #groups)
+        assert.are.equal("One", groups[1].manga.title)
+        assert.are.equal(1, groups[1].active)
+        assert.are.equal(1, groups[1].failed)
+        assert.are.equal(1, groups[1].downloaded)
+        assert.is_true(groups[1].paused)
+
+        local manga_rows = downloads.buildDownloadMangaMenuTable(groups, {})
+        assert.are.equal("One", manga_rows[1].text)
+        assert.is_truthy(manga_rows[1].thumbnail_placeholder)
+        assert.are.equal("3 tasks", manga_rows[1].mandatory)
+
+        local downloaded = downloads.buildDownloadMangaDetailTable(groups[1], { filter = "downloaded" })
+        assert.are.equal(1, #downloaded)
+        assert.are.equal("One / 9", downloaded[1].text)
+    end)
+
+    it("returns the selected manga from grouped Downloads rows", function()
+        local downloads = require("suwayomi/ui/downloads")
+        local selected
+        local menu = downloads.showDownloadsMenu({
+            active = {
+                { key = "1:10", manga = { id = 1, title = "One" }, chapter = { name = "10" }, progress = {} },
+            },
+        }, {
+            onSelectManga = function(group)
+                selected = group
+                return "manga-detail"
+            end,
+        }, {
+            grouped_by_manga = true,
+        })
+
+        assert.are.equal("manga-detail", menu.item_table[1].callback())
+        assert.are.equal("One", selected.manga.title)
+    end)
+
     it("retains distinct archive evidence in failed and repairing rows", function()
         local downloads = require("suwayomi/ui/downloads")
         local formatter = require("suwayomi/downloads/status_formatter")

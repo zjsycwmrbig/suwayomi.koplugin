@@ -3,6 +3,8 @@ package.path = "?.lua;" .. package.path
 describe("suwayomi/ui/list_menu", function()
     local created_options
     local created_textboxes
+    local hidden_page_info
+    local shown_page_info
     local stubbed_modules
 
     local function widgetModule()
@@ -41,6 +43,8 @@ describe("suwayomi/ui/list_menu", function()
     before_each(function()
         created_options = nil
         created_textboxes = {}
+        hidden_page_info = 0
+        shown_page_info = 0
         stubbed_modules = {
             "ui/bidi",
             "ffi/blitbuffer",
@@ -180,6 +184,11 @@ describe("suwayomi/ui/list_menu", function()
             return {
                 new = function(_, options)
                     created_options = options
+                    options.page_info = {
+                        resetLayout = function() end,
+                        hide = function() hidden_page_info = hidden_page_info + 1 end,
+                        show = function() shown_page_info = shown_page_info + 1 end,
+                    }
                     return options
                 end,
             }
@@ -206,8 +215,12 @@ describe("suwayomi/ui/list_menu", function()
         local menu = ListMenu.show{ title = "Library", bottom_navigation = navigation }
         assert.are.equal(728, created_options.height)
         assert.are.same({ menu, navigation }, attached)
+        assert.is_true(menu._suwayomi_hide_page_info)
+        assert.are.equal(1, hidden_page_info)
         local ordinary = ListMenu.show{ title = "Chapters" }
         assert.is_nil(ordinary.height)
+        assert.is_false(ordinary._suwayomi_hide_page_info)
+        assert.are.equal(1, shown_page_info)
         assert.are.equal(menu, attached[1])
     end)
 

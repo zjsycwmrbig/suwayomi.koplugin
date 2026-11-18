@@ -146,6 +146,44 @@ function DownloadQueue:isPaused()
     return self.settings:getStore():readKey("downloads_paused") == true
 end
 
+function DownloadQueue:getPausedMangaIds()
+    local stored = self.settings:getStore():readKey("downloads_paused_mangas", {})
+    if type(stored) ~= "table" then return {} end
+    local ids = {}
+    for manga_id, paused in pairs(stored) do
+        if paused == true and tostring(manga_id) ~= "" then ids[tostring(manga_id)] = true end
+    end
+    return ids
+end
+
+function DownloadQueue:isMangaPaused(manga)
+    local manga_id = type(manga) == "table" and (manga.id or manga.title) or manga
+    if manga_id == nil then return false end
+    return self:getPausedMangaIds()[tostring(manga_id)] == true
+end
+
+function DownloadQueue:setMangaPaused(manga, paused)
+    if not self:checkStoreFence() then return nil, "store_blocked" end
+    local manga_id = type(manga) == "table" and (manga.id or manga.title) or manga
+    if manga_id == nil or tostring(manga_id) == "" then return nil, "missing_manga" end
+    local key = tostring(manga_id)
+    local ok, err = self.settings:getStore():saveDocument(function(doc)
+        if doc.downloads_paused_mangas ~= nil and type(doc.downloads_paused_mangas) ~= "table" then
+            error("unsupported_downloads_paused_mangas", 0)
+        end
+        local paused_mangas = doc.downloads_paused_mangas or {}
+        paused_mangas[key] = paused == true and true or nil
+        doc.downloads_paused_mangas = paused_mangas
+    end)
+    if not ok then
+        if self:isBlocked() then self:scheduleReconciliation() end
+        return nil, err
+    end
+    if paused ~= true then self:process() end
+    self.onStatusChanged()
+    return true
+end
+
 -- Pause preserves jobs and retry policy; stopped attempts restart on resume.
 function DownloadQueue:setPaused(paused)
     if not self:checkStoreFence() then return nil, "store_blocked" end
@@ -412,6 +450,7 @@ function DownloadQueue:getSnapshot()
         manual_deletion = {},
         manual_deletion_error = "unavailable",
         paused = self:isPaused(),
+        paused_mangas = self:getPausedMangaIds(),
     }
     if self.manual_deletion then
         snapshot.manual_deletion, snapshot.manual_deletion_error = self.manual_deletion:snapshot()

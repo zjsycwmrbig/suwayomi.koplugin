@@ -290,8 +290,12 @@ function Lifecycle:process()
         local ready_fresh_index
         local delayed_retry_at
         local current_time = self.now()
+        local paused_mangas = self:getPausedMangaIds()
         for index, item in ipairs(self.items or {}) do
-            local retry_ready = not item.retry_at or item.retry_at <= current_time
+            local manga = item.manga or {}
+            local manga_id = tostring(manga.id or manga.title or "")
+            local retry_ready = not paused_mangas[manga_id]
+                and (not item.retry_at or item.retry_at <= current_time)
             if retry_ready and item.previous_pid and self.stopping_jobs[item.previous_pid] then
                 item.retry_at = current_time + 1
                 retry_ready = false
@@ -301,12 +305,14 @@ function Lifecycle:process()
             if (tonumber(item.retry_count) or 0) > 0 then
                 if retry_ready and not ready_retry_index then
                     ready_retry_index = index
-                elseif not retry_ready and (not delayed_retry_at or item.retry_at < delayed_retry_at) then
+                elseif not retry_ready and item.retry_at
+                    and (not delayed_retry_at or item.retry_at < delayed_retry_at) then
                     delayed_retry_at = item.retry_at
                 end
             elseif retry_ready and not ready_fresh_index then
                 ready_fresh_index = index
-            elseif not retry_ready and (not delayed_retry_at or item.retry_at < delayed_retry_at) then
+            elseif not retry_ready and item.retry_at
+                and (not delayed_retry_at or item.retry_at < delayed_retry_at) then
                 delayed_retry_at = item.retry_at
             end
         end
@@ -332,6 +338,7 @@ function Lifecycle:process()
     if earliest_retry_at then
         self:scheduleRetryWakeup(earliest_retry_at)
     end
+    if started_count > 0 then self.onStatusChanged() end
 
     self:schedulePoll()
     local finished_at = os.time()

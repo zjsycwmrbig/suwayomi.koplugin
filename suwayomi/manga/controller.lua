@@ -82,6 +82,18 @@ local function notify(owner, message)
     owner:showMessage(message, { timeout = 3, toast = true })
 end
 
+local DOWNLOAD_MANAGER_FILTERS = {
+    all = true,
+    undownloaded = true,
+    downloaded = true,
+    failed = true,
+    active = true,
+}
+
+local function normalizeDownloadManagerFilter(filter)
+    return DOWNLOAD_MANAGER_FILTERS[filter] and filter or nil
+end
+
 local function saveChapterListing(owner, manga, chapters)
     local credentials = SuwayomiSettings:load()
     local scope = SuwayomiSettings:normalizeEndpointScope(credentials.server_url)
@@ -503,6 +515,7 @@ function Methods:showChapterResultForManga(manga, result, options)
             local is_current_menu = self.current_chapter_menu == chapter_menu
             if is_current_menu then
                 self.current_chapter_menu = nil
+                self.download_manager_filter = nil
                 self:cancelMangaNetworkRequests()
             end
             if is_current_menu
@@ -535,6 +548,7 @@ end
 function Methods:showChaptersForManga(manga, options)
     if self.suwayomi_host_retired or type(manga) ~= "table" then return false end
     options = copyOptions(options)
+    self.download_manager_filter = normalizeDownloadManagerFilter(options.download_manager_filter)
     local credentials = SuwayomiSettings:load()
     local scope = SuwayomiSettings:normalizeEndpointScope(credentials.server_url)
     if manga.endpoint_scope and manga.endpoint_scope ~= scope then return false end
@@ -555,6 +569,12 @@ function Methods:showChaptersForManga(manga, options)
         return self:startRefreshMangaForChapters(manga, options)
     end
     return self:startFetchChaptersForManga(manga, options)
+end
+
+function Methods:showDownloadChaptersForManga(manga, filter)
+    filter = normalizeDownloadManagerFilter(filter) or "undownloaded"
+    self.download_manager_filter = filter
+    return self:showChaptersForManga(manga, { download_manager_filter = filter })
 end
 
 

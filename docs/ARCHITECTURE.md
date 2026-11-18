@@ -54,12 +54,14 @@ Explicit inspection waits for confirmed worker exit before persistence and callb
 
 ## Download ahead
 
-Global pause persists `downloads_paused` in the existing checked document. The
-queue requeues active supported jobs before terminating attempts through normal
-reconciliation. Paused scheduling still reaps stopping workers and commits late
-complete publications, but launches no new transfers. Resume preserves jobs,
-destinations, retry budgets, and future deadlines. Startup honors pause. Automatic
-refill may admit jobs while paused; execution remains held by the queue.
+Global pause persists `downloads_paused` in the existing checked document.
+Per-manga pause persists manga IDs in `downloads_paused_mangas`; it holds that
+manga's queued chapters while other manga continue. The queue requeues active
+supported jobs before terminating attempts through normal reconciliation.
+Paused scheduling still reaps stopping workers and commits late complete
+publications, but launches no new transfers. Resume preserves jobs,
+destinations, retry budgets, and future deadlines. Startup honors pause.
+Automatic refill may admit jobs while paused; execution remains held by the queue.
 
 [ADR-0004](adr/0004-durable-download-ahead-refill.md) owns refill policy and request persistence. The service stores one revisioned request per manga with verified endpoint association, not proposed chapter candidates. Completed close, manual read/unread, actual reconciliation, successful chapter context publication, and policy/filter changes can enroll work. Rendering and queue progress cannot. Enrollment shares the checked read/intent transaction; admission and consumption of the matching request revision also commit together.
 
@@ -70,6 +72,12 @@ Existing archives and unknown legacy records do not acquire a current-server ori
 The optional KOReader auto-mark prompt follows an explicit nonzero policy choice. Only Enable or Keep disabled with Don't ask again checked retires it, after a successful plugin setting save. Enable changes KOReader's global preference only after that save. Native Back/outside dismissal ignores the checkbox and leaves the prompt eligible.
 
 ## Manual deletion and retention
+
+The Downloads hub groups active, queued, failed, and locally downloaded chapters
+by manga. A manga opens its task controls and chapter filters; chapter rows retain
+the normal Download, Delete, read-state, and Mark previous as read actions.
+Per-manga pause, cancellation, and downloaded-file removal therefore operate on
+one queue identity without changing read state or server chapters.
 
 The Downloads inventory has an explicit cross-manga ordinary-Delete surface.
 It observes recorded paths and bounded configured-root CBZs, omits symlinks and
@@ -148,8 +156,9 @@ Plugin-authored UI strings pass through [i18n](TRANSLATING.md); server values re
 close the old navigation branch and cancel source fetches without stopping the
 process-owned download service. Main menus opt into `ui/bottom_navigation.lua`
 through `bottom_navigation` options; `list_menu.lua` constructs the native menu
-at a reduced height before appending the footer, preserving paging space.
-Chapter/detail screens keep their normal return behavior. `plugin_language` in
+at a reduced height before appending the footer and hides the native page-info
+footer on those screens, preserving paging space without drawing two navigation
+surfaces. Chapter/detail screens keep their normal paging and return behavior. `plugin_language` in
 the checked settings store selects `zh_CN` or `en`; plugin initialization and
 language changes set the i18n override without mutating KOReader gettext state.
 Changing language reconstructs Settings, including the footer and submenus.

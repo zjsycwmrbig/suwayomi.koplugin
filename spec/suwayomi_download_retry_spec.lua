@@ -64,6 +64,25 @@ describe("download retry across live menus", function()
         error("Missing action: " .. id)
     end
 
+    local function openMangaDownloads()
+        assert.is_truthy(downloads_menu and downloads_menu.item_table[1]
+            and downloads_menu.item_table[1].download_group)
+        local opened = plugin:showDownloadMangaGroup(downloads_menu.item_table[1].download_group)
+        assert.is_not_nil(opened)
+        return stack[#stack]
+    end
+
+    local function openDownloadJob(state)
+        local detail = openMangaDownloads()
+        for _, row in ipairs(detail.item_table) do
+            if row.job and row.job.state == state then
+                row.callback()
+                return stack[#stack], detail
+            end
+        end
+        error("Missing download job row: " .. state)
+    end
+
     local function failure(error_message)
         return queue:buildPersistentJob(manga, chapter, os.getenv("TEMP") or "/tmp", "failed", {
             progress = { state = "failed", error = error_message or full_error },
@@ -86,14 +105,25 @@ describe("download retry across live menus", function()
         assert.are.equal(state, queue:getStatus(manga, chapter).state)
         assert.are.equal(state, queue:findPersistentJob(queue:getKey(manga, chapter)).state)
 
-        local found = false
-        for _, row in ipairs(downloads_menu.item_table) do
-            if row.text and row.text:find("Retry chapter", 1, true) then
-                assert.are.equal(label, row.mandatory)
-                found = true
-            end
+        local group = assert(downloads_menu.item_table[1] and downloads_menu.item_table[1].download_group)
+        local count = state == "downloading" and group.active
+            or state == "queued" and group.queued
+            or state == "failed" and group.failed
+            or state == "downloaded" and group.downloaded
+            or 0
+        local snapshot = queue:getSnapshot()
+        if count == 0 then
+            count = state == "downloading" and #(snapshot.active or {})
+                or state == "queued" and #(snapshot.queued or {})
+                or state == "failed" and #(snapshot.failed or {})
+                or 0
         end
-        assert.is_true(found)
+        assert.is_true(count > 0, "missing " .. label .. " status in manga group: active="
+            .. tostring(group.active) .. ", queued=" .. tostring(group.queued)
+            .. ", failed=" .. tostring(group.failed) .. ", downloaded=" .. tostring(group.downloaded)
+            .. ", snapshot active=" .. tostring(#(snapshot.active or {}))
+            .. ", queued=" .. tostring(#(snapshot.queued or {}))
+            .. ", failed=" .. tostring(#(snapshot.failed or {})))
 
         assert.are.equal(0, queue:getFailedCount())
     end
@@ -161,7 +191,7 @@ describe("download retry across live menus", function()
                 function options:onMenuSelect(item)
                     if item.select_enabled == false then return true end
                     self:onMenuChoice(item)
-                    if self.close_callback then self.close_callback() end
+                    if not item.keep_menu_open and self.close_callback then self.close_callback() end
                     return true
                 end
                 function options:onClose() ui:close(self) end
@@ -211,7 +241,7 @@ describe("download retry across live menus", function()
             it("finalizes " .. terminal .. " retry before refreshing menus with remaining worker " .. tostring(remaining), function()
                 showScreens()
                 flushTimers()
-                downloads_menu:onMenuSelect(downloads_menu.item_table[1])
+                openDownloadJob("failed")
                 click("retry")
                 queue:process(); flushTimers()
                 assertStatus("downloading", "Downloading")
@@ -266,9 +296,10 @@ describe("download retry across live menus", function()
                     assert.is_falsy(row.text and row.text:find("Retry chapter", 1, true))
                 end
                 if not remaining then
-                    assert.are.equal("No downloads queued.", downloads_menu.item_table[3].text)
+                    assert.are.equal(0, #queue:getSnapshot().active)
+                    assert.are.equal(0, #queue:getSnapshot().queued)
                 else
-                    assert.are.equal("Downloading", downloads_menu.item_table[1].mandatory)
+                    assert.are.equal(1, #queue:getSnapshot().active)
                 end
                 assert.are.equal(1, #observed)
                 assert.is_nil(observed[1].active)
@@ -286,7 +317,7 @@ describe("download retry across live menus", function()
         it("rejects " .. terminal .. " without an archive before publishing success", function()
             showScreens()
             flushTimers()
-            downloads_menu:onMenuSelect(downloads_menu.item_table[1])
+            openDownloadJob("failed")
             click("retry")
             queue:process(); flushTimers()
             local active = queue:getActiveJob(queue:getKey(manga, chapter))
@@ -311,7 +342,7 @@ describe("download retry across live menus", function()
             assert.are.equal(0, #queue:getSnapshot().queued)
             assert.are.equal("failed", queue:findPersistentJob(active.key).state)
 
-            assert.are.equal("Failed", downloads_menu.item_table[1].mandatory)
+            assert.are.equal(1, #queue:getSnapshot().failed)
             assert.are.equal("Downloads · 1 failed", plugin:showQuickActions().actions[3].text)
         end)
     end
@@ -321,7 +352,7 @@ describe("download retry across live menus", function()
             showScreens()
             if origin == "Downloads" then
                 flushTimers()
-                downloads_menu:onMenuSelect(downloads_menu.item_table[1])
+                openDownloadJob("failed")
             else
                 chapters_menu.item_table[1].callback()
                 selectAction("download_error")
@@ -374,20 +405,28 @@ describe("download retry across live menus", function()
                     active.progress_path, "failed", 0, 1, nil, retry_error, true)
                 table.insert(temporary_paths, active.progress_path)
                 queue:poll()
+                flushTimers()
             end
-            flushTimers()
-            downloads_menu:onMenuSelect(downloads_menu.item_table[1])
+            plugin:refreshDownloadsMenu()
+            local detail = openMangaDownloads()
+            local row_state = state == "downloading" and "downloading" or "queued"
+            local job_row
+            for _, row in ipairs(detail.item_table) do
+                if row.job and row.job.state == row_state then job_row = row; break end
+            end
+            assert.is_not_nil(job_row, "missing " .. row_state .. " job row")
+            job_row.callback()
             if state == "scheduled" then
                 selectAction("download_error")
                 assert.is_truthy(stack[#stack].text:find(retry_error, 1, true))
                 click("close")
-                assert.are.equal("Retry scheduled", downloads_menu.item_table[1].mandatory)
+                assert.are.equal(1, #queue:getSnapshot().queued)
                 assert.is_truthy(queue:findPersistentJob(queue:getKey(manga, chapter)).retry_at)
             else
                 ui:close(stack[#stack])
             end
             assert.are.equal(downloads_menu, plugin.current_downloads_menu)
-            assert.are.equal(downloads_menu, stack[#stack])
+            assert.are.equal(detail, stack[#stack])
             if state == "queued" then
                 queue:process(); flushTimers()
                 assertStatus("downloading", "Downloading")
@@ -398,12 +437,13 @@ describe("download retry across live menus", function()
                 table.insert(temporary_paths, active.progress_path)
                 queue:poll()
                 flushTimers()
-                assert.are.equal("Failed", downloads_menu.item_table[1].mandatory)
+                assert.are.equal(1, #queue:getSnapshot().failed)
 
                 assert.are.equal(1, queue:getFailedCount())
                 assert.are.equal("Downloads · 1 failed", home.actions[3].text)
             end
-            downloads_menu:onClose()
+            ui:close(detail)
+            plugin:getNavigation():closeAll()
             assert.is_nil(plugin.current_downloads_menu)
             assert.is_false(plugin:isSuwayomiScreenActive(downloads_menu))
         end)
@@ -412,24 +452,29 @@ describe("download retry across live menus", function()
     it("closes details without changing the origin or the complete stored error", function()
         showScreens()
         for _, origin in ipairs({ "downloads", "chapters" }) do
-            local before = #stack
-            if origin == "downloads" then downloads_menu:onMenuSelect(downloads_menu.item_table[1])
-            else plugin:showChapterDownloadError(manga, chapter) end
+            local detail
+            if origin == "downloads" then
+                local viewer
+                viewer, detail = openDownloadJob("failed")
+                assert.is_not_nil(viewer)
+            else
+                plugin:showChapterDownloadError(manga, chapter)
+            end
             click("close")
-            assert.are.equal(before, #stack)
             assert.are.equal(downloads_menu, plugin.current_downloads_menu)
             assert.are.equal(full_error, queue:findPersistentJob(queue:getKey(manga, chapter)).progress.error)
+            if detail then ui:close(detail) end
         end
     end)
 
-    it("still clears failures and replaces Downloads through native selection", function()
+    it("still clears failures and replaces Downloads through the title action", function()
         showScreens()
-        downloads_menu:onMenuSelect(downloads_menu.item_table[2])
+        plugin:performDownloadsTitleAction({ id = "clear_failed" }, downloads_menu)
         assert.are.equal(0, queue:getFailedCount())
         assert.is_nil(queue:getStatus(manga, chapter))
 
         assert.are_not.equal(downloads_menu, plugin.current_downloads_menu)
-        assert.are.equal("No downloads queued.", plugin.current_downloads_menu.item_table[3].text)
+        assert.are.equal("No manga download tasks.", plugin.current_downloads_menu.item_table[1].text)
         assert.are.equal(plugin.current_downloads_menu, stack[#stack])
         for _, widget in ipairs(stack) do assert.are_not.equal(downloads_menu, widget) end
     end)
@@ -516,7 +561,7 @@ describe("download retry across live menus", function()
             else
                 assert.are.equal(state == "downloaded" and "Downloaded" or nil,
                     chapters_menu.item_table[1].mandatory)
-                assert.are.equal("No downloads queued.", downloads_menu.item_table[3].text)
+                assert.are.equal("No manga download tasks.", downloads_menu.item_table[1].text)
                 assert.is_nil(queue:findPersistentJob(key))
             end
         end)
