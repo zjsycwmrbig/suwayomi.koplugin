@@ -346,10 +346,6 @@ msgstr ""
 msgid "Cannot delete chapter: storage is ambiguous"
 msgstr ""
 
-msgid ""
-"Cannot delete these downloads: a chapter lacks a verified server association."
-msgstr ""
-
 msgid "Cannot determine the next chapter from the saved list."
 msgstr ""
 

@@ -94,6 +94,9 @@ function Methods:deleteChapterFromDeviceWithOptions(manga, chapter, options)
         end
         return false, cancelled and "queued" or "missing"
     end
+    if options.local_delete and not self:canDeleteChapterArchive(manga, chapter) then
+        return deletionFailed("conflicting_local_identity")
+    end
 
     local removal = queue.manual_deletion
     if not removal then return deletionFailed("identity_unavailable") end

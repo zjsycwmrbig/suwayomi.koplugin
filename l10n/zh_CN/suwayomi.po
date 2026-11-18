@@ -351,10 +351,6 @@ msgstr ""
 msgid "Cannot delete chapter: storage is ambiguous"
 msgstr "无法删除章节：存储状态不明确"
 
-msgid ""
-"Cannot delete these downloads: a chapter lacks a verified server association."
-msgstr "无法删除这些下载：部分章节未验证与服务器的关联。"
-
 msgid "Cannot determine the next chapter from the saved list."
 msgstr "无法从已保存的列表确定下一章。"
 

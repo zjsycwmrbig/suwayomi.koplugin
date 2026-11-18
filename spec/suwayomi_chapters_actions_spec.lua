@@ -981,6 +981,7 @@ describe("suwayomi/chapters/actions", function()
         local local_manga = { id = "m1", title = "Recovered", local_only = true }
         local recovered = plugin:getRecoveredChapters(local_manga)[1]
         plugin.current_chapter_context = { manga = local_manga, chapters = { recovered } }
+        function plugin:getSelectedChapters() return { recovered } end
         assert.is_true(plugin:performChapterAction(local_manga, recovered, "open"))
         assert.is_nil(opened)
         complete({ state = "valid" })
@@ -1363,6 +1364,96 @@ describe("suwayomi/chapters/actions", function()
         assert.are.equal("/downloads/Manga/Chapter 1.cbz", plugin.ledger.legacy.path)
         assert.is_false(plugin.ledger.legacy.read)
         assert.is_nil(downloader.existing["/downloads/Manga/Chapter 1.cbz"])
+    end)
+
+    it("deletes read orphan files alongside recorded downloads without server association", function()
+        local read = { id = "c1", name = "Chapter 1", is_read = true }
+        local recorded = { id = "c2", name = "Chapter 2", is_read = true }
+        local unread = { id = "c3", name = "Chapter 3", is_read = false }
+        local path = "/downloads/Manga/Chapter 1.cbz"
+        local plugin = build_plugin({
+            existing = { [path] = true, ["/downloads/Manga/Chapter 2.cbz"] = true,
+                ["/downloads/Manga/Chapter 3.cbz"] = true },
+            current_chapter_context = { manga = manga, chapters = { read, recorded, unread } },
+            ledger = {
+                ["m1:c1"] = { manga_id = "m1", chapter_id = "c1", read = true },
+                ["m1:c2"] = { manga_id = "m1", chapter_id = "c2", read = true,
+                    path = "/downloads/Manga/Chapter 2.cbz" },
+            },
+        })
+        assert.is_false(plugin:canMutateChapterArchive(manga, read))
+        function plugin:showBulkActionConfirmation(_, _, callback)
+            self.confirmation = callback
+            return true
+        end
+        assert.is_true(plugin:performBulkChapterAction("delete_read_downloaded"))
+        assert.is_true(downloader.existing[path])
+        plugin.confirmation()
+        assert.is_nil(downloader.existing[path])
+        assert.is_nil(downloader.existing["/downloads/Manga/Chapter 2.cbz"])
+        assert.is_true(downloader.existing["/downloads/Manga/Chapter 3.cbz"])
+        assert.is_true(plugin.ledger["m1:c1"].read)
+        assert.is_nil(plugin.ledger["m1:c1"].path)
+        assert.are.same({}, plugin.metadata_updates)
+        assert.are.same({}, plugin.messages)
+    end)
+
+    it("keeps an orphan archive when it becomes busy after local deletion confirmation", function()
+        local path = "/downloads/Manga/Chapter 1.cbz"
+        local read = { id = "c1", name = "Chapter 1", is_read = true }
+        local plugin, queue = build_plugin({ existing = { [path] = true },
+            current_chapter_context = { manga = manga, chapters = { read } } })
+        function plugin:showBulkActionConfirmation(_, _, callback) self.confirmation = callback; return true end
+        assert.is_true(plugin:performBulkChapterAction("delete_read_downloaded"))
+        queue.status["m1:c1"] = { state = "downloading" }
+        plugin.confirmation()
+        assert.is_true(downloader.existing[path])
+        assert.are.same({}, removed_paths)
+    end)
+
+    it("refuses conflicting server records for local deletion without removing files", function()
+        local path = "/downloads/Manga/Chapter 1.cbz"
+        local read = { id = "c1", name = "Chapter 1", is_read = true }
+        local plugin = build_plugin({ existing = { [path] = true },
+            current_chapter_context = { manga = manga, chapters = { read } },
+            ledger = { ["m1:c1"] = { manga_id = "m1", chapter_id = "c1",
+                endpoint_scope = "https://other.example", read = true } },
+        })
+        assert.is_false(plugin:performBulkChapterAction("delete_read_downloaded"))
+        assert.is_true(downloader.existing[path])
+        assert.are.same({}, removed_paths)
+    end)
+
+    it("rechecks local record conflicts after accepting the confirmation", function()
+        local path = "/downloads/Manga/Chapter 1.cbz"
+        local read = { id = "c1", name = "Chapter 1", is_read = true }
+        local plugin = build_plugin({ existing = { [path] = true },
+            current_chapter_context = { manga = manga, chapters = { read } } })
+        function plugin:showBulkActionConfirmation(_, _, callback) self.confirmation = callback; return true end
+        assert.is_true(plugin:performBulkChapterAction("delete_read_downloaded"))
+        assert(settings:saveReaderReturnContexts({ [path] = { path = path, manga_id = "other",
+            chapter_id = "other", endpoint_scope = manga.endpoint_scope } }))
+        plugin.confirmation()
+        assert.is_true(downloader.existing[path])
+        assert.are.same({}, removed_paths)
+    end)
+
+    it("deletes an unknown-origin local archive without adopting its server association", function()
+        local path = "/downloads/Manga/Chapter 1.cbz"
+        local read = { id = "c1", name = "Chapter 1", is_read = true }
+        local plugin = build_plugin({ existing = { [path] = true },
+            current_chapter_context = { manga = manga, chapters = { read } },
+            ledger = { ["m1:c1"] = { manga_id = "m1", chapter_id = "c1", path = path, read = true } },
+        })
+        plugin.ledger["m1:c1"].endpoint_scope = nil
+        assert(settings:getStore():saveKey("chapter_ledger", plugin.ledger))
+        function plugin:showBulkActionConfirmation(_, _, callback) self.confirmation = callback; return true end
+        assert.is_false(plugin:canMutateChapterArchive(manga, read))
+        assert.is_true(plugin:performBulkChapterAction("delete_read_downloaded"))
+        plugin.confirmation()
+        assert.is_nil(downloader.existing[path])
+        assert.is_nil(plugin.ledger["m1:c1"].endpoint_scope)
+        assert.is_true(plugin.ledger["m1:c1"].read)
     end)
 
     it("deletes only read downloaded chapters without a success popup", function()

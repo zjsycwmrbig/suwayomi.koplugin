@@ -81,6 +81,13 @@ per-manga pause, cancellation, read/downloaded-file removal, chapter refresh, an
 per-manga delete-policy controls. Chapter rows retain the normal Download, Delete,
 read-state, and Mark previous as read actions.
 
+Explicit bulk local removal uses local file identity rather than server-mutation
+admission. A downloaded file found at a supported chapter path may be removed
+even when its ledger entry is pathless or its origin is unknown. This does not
+adopt it for read synchronization. Conflicting recorded identities remain blocked;
+the deletion owner still checks the configured root, archive generation, reader,
+and download ownership before unlinking.
+
 Per-manga delete policy may override the global delete-after-mark-read and
 finished-retention defaults independently. The resolved policy controls manual
 read actions, reader-close enrollment, retention processing, and whether a

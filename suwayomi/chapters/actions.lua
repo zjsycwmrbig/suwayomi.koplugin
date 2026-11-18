@@ -538,6 +538,7 @@ function Methods:deleteSelectedChapters()
     self:withChapterMenuRefreshSuppressed(function()
         for _index, chapter in ipairs(chapters) do
             local ok, state = self:deleteChapterFromDeviceWithOptions(manga, chapter, {
+                local_delete = true,
                 quiet_active = true,
                 quiet_missing = true,
                 quiet_delete_failed = true,
@@ -631,6 +632,7 @@ function Methods:deleteReadChaptersFromDevice()
     self:withChapterMenuRefreshSuppressed(function()
         for _index, chapter in ipairs(read_chapters) do
             local ok, state = self:deleteChapterFromDeviceWithOptions(manga, chapter, {
+                local_delete = true,
                 quiet_active = true,
                 quiet_delete_failed = true,
                 quiet_missing = true,
@@ -726,6 +728,7 @@ function Methods:deleteAllDownloadedChaptersFromDevice()
     self:withChapterMenuRefreshSuppressed(function()
         for _index, chapter in ipairs(chapters) do
             local ok, state = self:deleteChapterFromDeviceWithOptions(manga, chapter, {
+                local_delete = true,
                 quiet_active = true,
                 quiet_missing = true,
                 quiet_delete_failed = true,
@@ -783,10 +786,25 @@ end
 function Methods:performBulkChapterAction(action_id, menu_context)
     local context = self.current_chapter_context
     local manga = context and context.manga
+    local local_delete = action_id == "delete_selected" or action_id == "delete_read_downloaded"
+        or action_id == "delete_all_downloaded"
+    if manga and local_delete then
+        local lookup = self:buildChapterDownloadLookup(manga)
+        local targets = action_id == "delete_selected" and self:getSelectedChapters(manga, context.chapters)
+            or action_id == "delete_read_downloaded" and self:getReadDownloadedChaptersFromCurrentContext()
+            or self:getDownloadedChaptersFromCurrentContext()
+        for _, chapter in ipairs(targets) do
+            if not self:canDeleteChapterArchive(manga, chapter, lookup)
+                and not self:canMutateChapterArchive(manga, chapter, lookup) then
+                self:showMessage(I18n.t("Could not delete this chapter from device."))
+                return false
+            end
+        end
+    end
     if manga and action_id ~= "select_all" and action_id ~= "select_chapters" and action_id ~= "select_range"
         and action_id ~= "clear_selection" and action_id ~= "scanlator_filter"
         and action_id ~= "toggle_manga_pause"
-        and action_id ~= "download_all_missing" then
+        and action_id ~= "download_all_missing" and not local_delete then
         local recovered_refresh = action_id == "refresh_chapters" and not manga.local_only and manga.id
             and ((context.missing and not manga.endpoint_scope)
                 or (manga.endpoint_scope and manga.endpoint_scope
@@ -794,19 +812,6 @@ function Methods:performBulkChapterAction(action_id, menu_context)
         if not self:hasCurrentChapterListing(manga, context.chapters) and not recovered_refresh then
             self:showMessage(I18n.t("This action requires a chapter list associated with the current server."))
             return false
-        end
-        if action_id == "delete_selected" or action_id == "delete_read_downloaded"
-            or action_id == "delete_all_downloaded" then
-            local lookup = self:buildChapterDownloadLookup(manga)
-            local targets = action_id == "delete_selected" and self:getSelectedChapters(manga, context.chapters)
-                or action_id == "delete_read_downloaded" and self:getReadDownloadedChaptersFromCurrentContext()
-                or self:getDownloadedChaptersFromCurrentContext()
-            for _, chapter in ipairs(targets) do
-                if not self:canMutateChapterArchive(manga, chapter, lookup) then
-                    self:showMessage(I18n.t("Cannot delete these downloads: a chapter lacks a verified server association."))
-                    return false
-                end
-            end
         end
     end
     if action_id == "bulk_downloads" then

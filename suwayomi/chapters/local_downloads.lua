@@ -108,12 +108,16 @@ function Methods:buildChapterDownloadLookup(manga, ledger)
         ledger = ledger or SuwayomiSettings:loadChapterLedger(),
         by_id = {},
         by_path = {},
+        path_records = {},
         foreign_paths = {},
     }
     local contexts = SuwayomiSettings:loadReaderReturnContexts()
     for _, collection in ipairs({ contexts, lookup.ledger }) do
         for _, entry in pairs(collection) do
             if type(entry) == "table" and type(entry.path) == "string" and entry.path ~= "" then
+                local records_for_path = lookup.path_records[entry.path] or {}
+                lookup.path_records[entry.path] = records_for_path
+                records_for_path[#records_for_path + 1] = entry
                 if entry.endpoint_scope and entry.endpoint_scope ~= manga.endpoint_scope then
                     lookup.foreign_paths[entry.path] = true
                 end
@@ -197,6 +201,23 @@ function Methods:canMutateChapterArchive(manga, chapter, lookup)
     if path and self:chapterArchiveExists(path) then
         -- A scoped pathless choice does not associate bytes found at a guessed path.
         return hasScopedPathRecord(manga, chapter, path, lookup)
+    end
+    return true
+end
+
+-- Explicit local removal needs a unique file, not permission to sync with a server.
+-- The deletion owner still validates root, reader, jobs, and archive generation.
+function Methods:canDeleteChapterArchive(manga, chapter, lookup)
+    if not manga or not chapter then return false end
+    lookup = lookup or self:buildChapterDownloadLookup(manga)
+    local entry = lookup.ledger[self:getChapterLedgerKey(manga, chapter)]
+    if type(entry) == "table" and entry.endpoint_scope
+        and entry.endpoint_scope ~= manga.endpoint_scope then return false end
+    local path = self:getChapterPath(manga, chapter, lookup)
+    if not path or lookup.foreign_paths[path] or not self:chapterArchiveExists(path) then return false end
+    for _, record in ipairs(lookup.path_records[path] or {}) do
+        if not matchesManga(record, manga)
+            or tostring(record.chapter_id or "") ~= tostring(chapter.id or "") then return false end
     end
     return true
 end
