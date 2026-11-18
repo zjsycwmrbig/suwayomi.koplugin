@@ -13,6 +13,7 @@ local I18n = require("suwayomi/i18n")
 local HomeController = {}
 HomeController.__index = HomeController
 local READER_RETURN_MENU_ID = "suwayomi_reader_return"
+local READER_CHAPTER_MENU_ID = "suwayomi_reader_chapters"
 
 -- Controllers expose new(deps) for a consistent boundary; methods remain plugin-bound mixins so this refactor can move code without changing callback behavior.
 function HomeController:new(deps)
@@ -30,16 +31,14 @@ local function ensureReaderReturnMenuOrder()
     if type(main_order) ~= "table" then
         return
     end
-    local return_index
-    for index, item_id in ipairs(main_order) do
-        if item_id == READER_RETURN_MENU_ID then
-            return_index = index
-            break
+    for index = #main_order, 1, -1 do
+        if main_order[index] == READER_RETURN_MENU_ID
+            or main_order[index] == READER_CHAPTER_MENU_ID then
+            table.remove(main_order, index)
         end
     end
-    if not return_index then
-        table.insert(main_order, 1, READER_RETURN_MENU_ID)
-    end
+    table.insert(main_order, 1, READER_RETURN_MENU_ID)
+    table.insert(main_order, 2, READER_CHAPTER_MENU_ID)
 end
 
 function Methods:showNotImplemented(message)
@@ -281,6 +280,13 @@ function Methods:addToMainMenu(menu_items)
                 sorting_hint = "main",
                 callback = function()
                     self:returnToSuwayomiChapters()
+                end,
+            }
+            menu_items[READER_CHAPTER_MENU_ID] = {
+                text = I18n.t("Suwayomi chapters"),
+                sorting_hint = "main",
+                callback = function()
+                    self:showReaderChapterList()
                 end,
             }
         end

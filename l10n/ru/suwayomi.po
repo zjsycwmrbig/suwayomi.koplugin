@@ -460,6 +460,10 @@ msgstr "Список глав изменился. Повторите это де
 msgid "Chapters"
 msgstr "Главы"
 
+#, fuzzy
+msgid "Chapters: %1"
+msgstr "Главы"
+
 msgid "Check again"
 msgstr "Проверить снова"
 
@@ -741,6 +745,9 @@ msgstr ""
 msgid "Cover with text"
 msgstr "Текст поиска"
 
+msgid "Current"
+msgstr ""
+
 msgid "Current active chapter finishes; queued chapters wait."
 msgstr ""
 
@@ -956,6 +963,9 @@ msgstr ""
 
 msgid "Download the chapter first."
 msgstr "Сначала скачайте главу."
+
+msgid "Download this chapter from Suwayomi Download management first."
+msgstr ""
 
 #, fuzzy
 msgid "Download undownloaded chapters"
@@ -1437,6 +1447,10 @@ msgstr "Описание недоступно."
 msgid "No saved chapter information is available."
 msgstr "Описание недоступно."
 
+#, fuzzy
+msgid "No saved chapter list is available. Refresh this manga from Suwayomi."
+msgstr "Доступна ещё %1 глава. Повторите это действие, чтобы скачать её."
+
 msgid "No saved filters."
 msgstr "Нет сохранённых фильтров."
 
@@ -1446,6 +1460,10 @@ msgstr "Данные входа"
 
 msgid "No unread chapters available to download."
 msgstr "Нет непрочитанных глав для скачивания."
+
+#, fuzzy
+msgid "Not downloaded"
+msgstr "Скачано"
 
 msgid "Not in library"
 msgstr "Не в библиотеке"
@@ -1889,6 +1907,10 @@ msgstr "Источник Suwayomi"
 msgid "Suwayomi Sources"
 msgstr "Источники Suwayomi"
 
+#, fuzzy
+msgid "Suwayomi chapters"
+msgstr "Главы Suwayomi"
+
 msgid ""
 "Suwayomi client for KOReader. Browse your Suwayomi server, manage source "
 "extensions, sync read state, and download chapters as local CBZ files."
@@ -1981,6 +2003,9 @@ msgstr ""
 "любое время."
 
 msgid "This action requires a chapter list associated with the current server."
+msgstr ""
+
+msgid "This book belongs to another server."
 msgstr ""
 
 msgid ""

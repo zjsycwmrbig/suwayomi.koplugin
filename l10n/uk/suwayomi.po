@@ -465,6 +465,10 @@ msgstr "Подання розділів змінилося. Виконайте �
 msgid "Chapters"
 msgstr "Розділи"
 
+#, fuzzy
+msgid "Chapters: %1"
+msgstr "Розділи"
+
 msgid "Check again"
 msgstr "Перевірити знову"
 
@@ -751,6 +755,9 @@ msgstr ""
 msgid "Cover with text"
 msgstr "Текст пошуку"
 
+msgid "Current"
+msgstr ""
+
 msgid "Current active chapter finishes; queued chapters wait."
 msgstr ""
 
@@ -967,6 +974,9 @@ msgstr ""
 
 msgid "Download the chapter first."
 msgstr "Спочатку завантажте розділ."
+
+msgid "Download this chapter from Suwayomi Download management first."
+msgstr ""
 
 #, fuzzy
 msgid "Download undownloaded chapters"
@@ -1451,6 +1461,10 @@ msgstr "Опис недоступний."
 msgid "No saved chapter information is available."
 msgstr "Опис недоступний."
 
+#, fuzzy
+msgid "No saved chapter list is available. Refresh this manga from Suwayomi."
+msgstr "Доступний ще %1 розділ. Виконайте цю дію ще раз, щоб завантажити його."
+
 msgid "No saved filters."
 msgstr "Немає збережених фільтрів."
 
@@ -1460,6 +1474,10 @@ msgstr "Дані входу"
 
 msgid "No unread chapters available to download."
 msgstr "Немає непрочитаних розділів для завантаження."
+
+#, fuzzy
+msgid "Not downloaded"
+msgstr "Завантажено"
 
 msgid "Not in library"
 msgstr "Не в бібліотеці"
@@ -1901,6 +1919,10 @@ msgstr "Джерело Suwayomi"
 msgid "Suwayomi Sources"
 msgstr "Джерела Suwayomi"
 
+#, fuzzy
+msgid "Suwayomi chapters"
+msgstr "Розділи Suwayomi"
+
 msgid ""
 "Suwayomi client for KOReader. Browse your Suwayomi server, manage source "
 "extensions, sync read state, and download chapters as local CBZ files."
@@ -1992,6 +2014,9 @@ msgstr ""
 "налаштування видалення не змінюються. Ви можете змінити його там будь-коли."
 
 msgid "This action requires a chapter list associated with the current server."
+msgstr ""
+
+msgid "This book belongs to another server."
 msgstr ""
 
 msgid ""

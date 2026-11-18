@@ -400,6 +400,9 @@ msgstr "章节视图已更改。请再次执行此下载操作。"
 msgid "Chapters"
 msgstr "章节"
 
+msgid "Chapters: %1"
+msgstr "章节：%1"
+
 msgid "Check again"
 msgstr "重新检查"
 
@@ -643,6 +646,9 @@ msgstr "仅封面"
 msgid "Cover with text"
 msgstr "封面与文字"
 
+msgid "Current"
+msgstr "当前"
+
 msgid "Current active chapter finishes; queued chapters wait."
 msgstr "当前正在下载的章节会完成，排队章节将暂停。"
 
@@ -841,6 +847,9 @@ msgstr ""
 
 msgid "Download the chapter first."
 msgstr "请先下载此章节。"
+
+msgid "Download this chapter from Suwayomi Download management first."
+msgstr "请先在 Suwayomi 下载管理中下载此章节。"
 
 msgid "Download undownloaded chapters"
 msgstr "下载未下载章节"
@@ -1301,6 +1310,9 @@ msgstr "没有可用的已保存书库信息。"
 msgid "No saved chapter information is available."
 msgstr "没有可用的已保存章节信息。"
 
+msgid "No saved chapter list is available. Refresh this manga from Suwayomi."
+msgstr "没有可用的已保存章节列表。请在 Suwayomi 中刷新此漫画。"
+
 msgid "No saved filters."
 msgstr "没有已保存的筛选器。"
 
@@ -1309,6 +1321,9 @@ msgstr "没有已保存的信息"
 
 msgid "No unread chapters available to download."
 msgstr "没有可下载的未读章节。"
+
+msgid "Not downloaded"
+msgstr "未下载"
 
 msgid "Not in library"
 msgstr "不在书架中"
@@ -1713,6 +1728,9 @@ msgstr "Suwayomi 源"
 msgid "Suwayomi Sources"
 msgstr "Suwayomi 源"
 
+msgid "Suwayomi chapters"
+msgstr "Suwayomi 章节目录"
+
 msgid ""
 "Suwayomi client for KOReader. Browse your Suwayomi server, manage source "
 "extensions, sync read state, and download chapters as local CBZ files."
@@ -1800,6 +1818,9 @@ msgstr ""
 
 msgid "This action requires a chapter list associated with the current server."
 msgstr "此操作需要与当前服务器关联的章节列表。"
+
+msgid "This book belongs to another server."
+msgstr "本书属于其他服务器。"
 
 msgid ""
 "This book belongs to another server. Go to Suwayomi opens the configured "

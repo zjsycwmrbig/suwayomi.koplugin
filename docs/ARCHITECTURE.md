@@ -118,6 +118,14 @@ Reader **Next chapter** resolves the exact current chapter in the matching compl
 
 `suwayomi/reader_finish.lua` wraps only the active reader's status instance. Native `onEndOfBook` runs first, including completion marking. A newly created, structurally recognized finish dialog gets a translated **Next chapter** button and rebuild/repaint; its native callback dispatches through the wrapped next-file method. For automatic next-file with access/date sorting, the adapter removes only the newly produced, translated native sort-error InfoMessage before dispatch. Stack identity prevents closing an older notice and handles notices covered by a toast; native silent-mode suppression needs no removal. Unexpected native output remains untouched. Previous navigation and unrelated documents delegate; recognized but blocked chapters never fall through to folder scanning. Wrappers retire with the host and never overwrite a later wrapper. These private KOReader seams require versioned runtime acceptance when changed.
 
+When KOReader's hidden/inaccessible end action is **Do nothing**, a linked
+Suwayomi document schedules the same guarded next-chapter request after native
+completion marking. Unlinked documents retain native behavior. The reader menu
+also exposes **Suwayomi chapters**, backed by the saved chapter cache and local
+archive association. It renders the manga-wide chapter directory over the active
+reader; selecting a downloaded row uses the same guarded archive verification and
+native document switch as Next chapter.
+
 When the blocked Next dialog belongs to another endpoint, its explicit Go to Suwayomi action opens the configured Library after the guarded reader close. It never passes the foreign manga to the current server's chapter flow.
 
 ## Read state and chapter actions

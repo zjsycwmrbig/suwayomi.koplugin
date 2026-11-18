@@ -160,6 +160,7 @@ describe("suwayomi plugin", function()
             returnToSuwayomiChapters = function(self)
                 self.returned_to_chapters = true
             end,
+            showReaderChapterList = function(self) self.reader_chapters_shown = true end,
             openNextChapter = function(self) self.next_requested = true end,
         })
 
@@ -169,16 +170,21 @@ describe("suwayomi plugin", function()
         assert.is_table(menu_items.suwayomi_reader_return)
         assert.are.equal("Go to Suwayomi", menu_items.suwayomi_reader_return.text)
         assert.are.equal("main", menu_items.suwayomi_reader_return.sorting_hint)
+        assert.is_table(menu_items.suwayomi_reader_chapters)
+        assert.are.equal("Suwayomi chapters", menu_items.suwayomi_reader_chapters.text)
         assert.are.equal("suwayomi_reader_return", runtime.reader_menu_order.main[1])
-        assert.are.equal("history", runtime.reader_menu_order.main[2])
+        assert.are.equal("suwayomi_reader_chapters", runtime.reader_menu_order.main[2])
+        assert.are.equal("history", runtime.reader_menu_order.main[3])
         assert.is_nil(menu_items.suwayomi_next_chapter)
 
         menu_items.suwayomi_reader_return.callback()
+        menu_items.suwayomi_reader_chapters.callback()
 
         assert.is_true(plugin.returned_to_chapters)
+        assert.is_true(plugin.reader_chapters_shown)
     end)
 
-    it("does not duplicate the reader return action in the reader menu order", function()
+    it("does not duplicate Suwayomi reader actions in the reader menu order", function()
         runtime_helper.teardown()
         runtime = runtime_helper.install({
             reader_return_contexts = {
@@ -188,7 +194,7 @@ describe("suwayomi plugin", function()
                 },
             },
             reader_menu_order = {
-                main = { "suwayomi_reader_return", "history" },
+                main = { "suwayomi_reader_return", "suwayomi_reader_chapters", "history" },
             },
         })
         local plugin = build_plugin({
@@ -201,8 +207,9 @@ describe("suwayomi plugin", function()
         plugin:addToMainMenu({})
 
         assert.are.equal("suwayomi_reader_return", runtime.reader_menu_order.main[1])
-        assert.are.equal("history", runtime.reader_menu_order.main[2])
-        assert.is_nil(runtime.reader_menu_order.main[3])
+        assert.are.equal("suwayomi_reader_chapters", runtime.reader_menu_order.main[2])
+        assert.are.equal("history", runtime.reader_menu_order.main[3])
+        assert.is_nil(runtime.reader_menu_order.main[4])
     end)
 
     it("does not add a reader menu item for non-Suwayomi books", function()
@@ -218,6 +225,7 @@ describe("suwayomi plugin", function()
 
         assert.is_nil(menu_items.suwayomi)
         assert.is_nil(menu_items.suwayomi_reader_return)
+        assert.is_nil(menu_items.suwayomi_reader_chapters)
         assert.is_nil(menu_items.suwayomi_next_chapter)
     end)
 

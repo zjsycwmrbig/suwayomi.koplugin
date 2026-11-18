@@ -43,6 +43,7 @@ describe("Suwayomi native finish adapter", function()
             return window and window.widget
         end
         function manager:setDirty() end
+        function manager:nextTick(callback) return callback() end
         info = {}
         reader = { document = { file = "current.cbz" } }
         reader_module = { instance = reader }
@@ -135,6 +136,15 @@ describe("Suwayomi native finish adapter", function()
         status:onOpenNextOrPreviousFileInFolder()
         assert.equals(0, opened)
         assert.equals(0, #manager._window_stack)
+    end)
+
+    it("advances naturally when the native end action is nothing", function()
+        settings.end_document_action = "nothing"
+        settings.end_document_auto_mark = true
+        assert.equals("native-result", status:onEndOfBook())
+        assert.equals(1, marked)
+        assert.equals(1, opened)
+        assert.equals(0, delegated)
     end)
     it("leaves other finish preferences with native status", function()
         settings.end_document_action = "mark_read"

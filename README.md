@@ -48,6 +48,13 @@ The native title subtitle shows saved, reconstructed, refreshing, loaded, and re
 
 After the last page of a Suwayomi-linked book, KOReader's finish popup offers **Next chapter** in place of **Open next file**. The configured automatic **Open next file** action also follows Suwayomi order, including with access/date sorting. Both use the last complete saved list and saved scanlator filter, including already-read chapters. The immediate matching successor is verified before switching and resumes its saved position. Missing or blocked downloads keep the current book open; navigation never skips ahead, downloads, or refreshes the list. Use **Go to Suwayomi** in the reader menu to manage the successor or refresh the saved list. KOReader retains its completion settings and finish/read controls.
 
+For Suwayomi-linked chapters, the plugin also treats KOReader's **Do nothing**
+end action as an automatic-next request. This keeps chapter-to-chapter reading
+working on setups where the native end-action menu is hidden. The in-reader
+**Suwayomi chapters** menu lists the saved manga chapter directory; downloaded
+chapters can be selected directly, while unavailable chapters remain visible as
+placeholders.
+
 The title-bar menu offers **Library** and **Suwayomi home**. Home provides **Browse** for source search and extensions, **Sync** for pending read/unread changes, and **Settings**. Back from the Library root exits the plugin.
 
 Browse manga results default to List when no view preference is saved. Existing saved choices are preserved. Tap the small menu icon at the bottom left to choose **List**, **Cover only**, or **Cover with text** (titles below the covers). Your choice is saved, and switching views keeps your place. Tap a manga to open it. Grids adapt to the screen width; paging and status messages remain full-width rows.

@@ -83,6 +83,12 @@ function Methods:installReaderFinishAdapter()
                 dialog:reinit()
                 UIManager:setDirty(dialog, "ui")
             end
+        elseif action == "nothing" then
+            UIManager:nextTick(function()
+                if current() and linked() and not pending() then
+                    self:openNextChapter()
+                end
+            end)
         elseif action == "next_file" and (sort == "access" or sort == "date") then
             -- Native auto-mark has already run. Remove only this call's known sort error.
             -- Inspect new stack entries because an existing toast can cover the InfoMessage.

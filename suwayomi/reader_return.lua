@@ -20,6 +20,7 @@ function ReaderReturn:new(deps)
 end
 
 local Methods = {}
+local liveReaderForPlugin
 
 local function copyTable(source)
     if type(source) ~= "table" then
@@ -350,7 +351,96 @@ function Methods:getCurrentReaderReturnContext()
     return self:getReaderReturnContextForPath(self:getCurrentReaderDocumentPath())
 end
 
-local function liveReaderForPlugin(plugin)
+local function loadReaderChapterListing(context)
+    if type(context) ~= "table" or present(context.manga_id) == nil then
+        return nil, I18n.t("This book is not linked to Suwayomi chapters.")
+    end
+    local credentials = SuwayomiSettings:load()
+    local scope = SuwayomiSettings:normalizeEndpointScope(credentials.server_url)
+    if not scope or (present(context.endpoint_scope) and context.endpoint_scope ~= scope) then
+        return nil, I18n.t("This book belongs to another server.")
+    end
+    local listing = SuwayomiSettings.loadChapterCache
+        and SuwayomiSettings:loadChapterCache(credentials, { id = context.manga_id })
+        or nil
+    if not listing or type(listing.chapters) ~= "table" then
+        return nil, I18n.t("No saved chapter list is available. Refresh this manga from Suwayomi.")
+    end
+    local manga = copyTable(listing.manga) or {}
+    manga.id = manga.id or context.manga_id
+    manga.title = manga.title or context.manga_title
+    manga.endpoint_scope = context.endpoint_scope or scope
+    return manga, listing.chapters
+end
+
+function Methods:openReaderChapter(manga, chapter)
+    local reader, document, path = liveReaderForPlugin(self)
+    if self.suwayomi_host_retired or not reader then return false end
+    local context = copyTable(self:getReaderReturnContextForPath(path))
+    if not context or context.path ~= path then return false end
+    local function is_current()
+        if self.suwayomi_host_retired then return false end
+        local current_reader, current_document, current_path = liveReaderForPlugin(self)
+        return current_reader == reader and current_document == document and current_path == path
+            and contextMatches(self:getReaderReturnContextForPath(path), context)
+    end
+    return self:verifyChapterDownload(manga, chapter, true, {
+        reader = reader,
+        is_current = is_current,
+        on_blocked = function(reason)
+            if is_current() then self:showMessage(reason) end
+        end,
+    })
+end
+
+function Methods:showReaderChapterList()
+    local reader, _, path = liveReaderForPlugin(self)
+    if self.suwayomi_host_retired or not reader then return false end
+    local context = self:getReaderReturnContextForPath(path)
+    local manga, chapters_or_error = loadReaderChapterListing(context)
+    if not manga then
+        self:showMessage(chapters_or_error)
+        return false
+    end
+    local chapters = chapters_or_error
+    local lookup = self.buildChapterDownloadLookup and self:buildChapterDownloadLookup(manga) or nil
+    local rows, current_index = {}, nil
+    local menu
+    for index, chapter in ipairs(chapters) do
+        local downloaded = self.isChapterDownloaded and self:isChapterDownloaded(manga, chapter, lookup) or false
+        local is_current = tostring(chapter.id) == tostring(context.chapter_id)
+        if is_current then current_index = index end
+        rows[#rows + 1] = {
+            text = chapter.name or tostring(chapter.id),
+            subtitle = downloaded and I18n.t("Downloaded") or I18n.t("Not downloaded"),
+            mandatory = is_current and I18n.t("Current") or nil,
+            chapter = chapter,
+            callback = function()
+                if not downloaded then
+                    self:showMessage(I18n.t("Download this chapter from Suwayomi Download management first."))
+                    return
+                end
+                if menu then UIManager:close(menu) end
+                if not is_current then self:openReaderChapter(manga, chapter) end
+            end,
+        }
+    end
+    local ListMenu = require("suwayomi/ui/list_menu")
+    menu = ListMenu.show({
+        title = I18n.f("Chapters: %1", manga.title or tostring(manga.id)),
+        item_table = rows,
+        itemnumber = current_index,
+        items_max_lines = 2,
+        fixed_item_heights = true,
+    })
+    menu.onMenuSelect = function(_, entry)
+        if entry and entry.callback then entry.callback() end
+        return true
+    end
+    return menu
+end
+
+liveReaderForPlugin = function(plugin)
     local ok_reader, ReaderUI = pcall(require, "apps/reader/readerui")
     local reader = ok_reader and ReaderUI and ReaderUI.instance
     if not reader or reader ~= plugin.ui or not reader.document then return nil end

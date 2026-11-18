@@ -15,6 +15,7 @@ describe("suwayomi/reader_return", function()
             "apps/reader/readerui",
             "apps/filemanager/filemanager",
             "ui/widget/confirmbox",
+            "suwayomi/ui/list_menu",
             "gettext",
         }) do
             package.loaded[name] = nil
@@ -56,6 +57,9 @@ describe("suwayomi/reader_return", function()
                 loadChapterLedger = function()
                     return state.ledger
                 end,
+                loadChapterCache = function()
+                    return options.chapter_listing
+                end,
             }
         end
         package.preload["suwayomi/network/request_job"] = function()
@@ -68,6 +72,7 @@ describe("suwayomi/reader_return", function()
         package.preload["ui/uimanager"] = function()
             return {
                 show = function(_, dialog) state.dialog = dialog end,
+                close = function(_, widget) state.closed_widget = widget end,
                 nextTick = function(_, callback)
                     if options.defer_next_tick then
                         state.next_tick_callback = callback
@@ -79,6 +84,12 @@ describe("suwayomi/reader_return", function()
         end
         package.preload["ui/widget/confirmbox"] = function()
             return { new = function(_, fields) return fields end }
+        end
+        package.preload["suwayomi/ui/list_menu"] = function()
+            return { show = function(menu_options)
+                state.reader_chapter_menu = menu_options
+                return menu_options
+            end }
         end
         package.preload["apps/reader/readerui"] = function()
             return {
@@ -123,6 +134,10 @@ describe("suwayomi/reader_return", function()
             showMessage = function(self, message)
                 table.insert(self.messages, message)
             end,
+            buildChapterDownloadLookup = function() return {} end,
+            isChapterDownloaded = function(_, _, chapter)
+                return (options.downloaded or {})[tostring(chapter.id)] == true
+            end,
             buildReaderReturnCloseTarget = function(_, _, manga)
                 if manga and manga.in_library == true then
                     return { kind = "library" }
@@ -166,6 +181,8 @@ describe("suwayomi/reader_return", function()
             "getCurrentReaderReturnContext",
             "returnToSuwayomiChapters",
             "openNextChapter",
+            "openReaderChapter",
+            "showReaderChapterList",
             "showNextChapterBlocked",
             "cancelReaderReturnRequest",
         })
@@ -189,6 +206,43 @@ describe("suwayomi/reader_return", function()
             chapter_name = "Chapter 1",
             source = { id = "local", name = "Local source" },
         }, state.contexts["/downloads/Local/Fable Orbit/Chapter 1.cbz"])
+    end)
+
+    it("shows the saved manga chapter directory inside the reader", function()
+        local path = "/downloads/Local/Manga/Chapter 2.cbz"
+        local plugin = build_plugin({
+            document_path = path,
+            contexts = {
+                [path] = {
+                    path = path, manga_id = "m1", manga_title = "Manga",
+                    chapter_id = "c2", chapter_name = "Chapter 2",
+                    endpoint_scope = "https://suwayomi.example",
+                },
+            },
+            chapter_listing = {
+                manga = { id = "m1", title = "Manga" },
+                chapters = {
+                    { id = "c1", name = "Chapter 1" },
+                    { id = "c2", name = "Chapter 2" },
+                    { id = "c3", name = "Chapter 3" },
+                },
+            },
+            downloaded = { c1 = true, c2 = true },
+        })
+        local opened
+        plugin.openReaderChapter = function(_, manga, chapter)
+            opened = { manga = manga, chapter = chapter }
+        end
+
+        plugin:showReaderChapterList()
+        assert.are.equal("Chapters: Manga", state.reader_chapter_menu.title)
+        assert.are.equal("Current", state.reader_chapter_menu.item_table[2].mandatory)
+        assert.are.equal("Downloaded", state.reader_chapter_menu.item_table[1].subtitle)
+        assert.are.equal("Not downloaded", state.reader_chapter_menu.item_table[3].subtitle)
+
+        state.reader_chapter_menu.onMenuSelect(state.reader_chapter_menu, state.reader_chapter_menu.item_table[1])
+        assert.are.equal("c1", opened.chapter.id)
+        assert.are.equal("Manga", opened.manga.title)
     end)
 
     it("replaces scalar persisted contexts when saving a return context", function()
