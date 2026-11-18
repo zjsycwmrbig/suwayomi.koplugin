@@ -1364,9 +1364,6 @@ msgctxt "chapter action"
 msgid "Open"
 msgstr "打开"
 
-msgid "Open Search > Suwayomi to access the plugin menu."
-msgstr "打开“搜索 > Suwayomi”以访问插件菜单。"
-
 msgid "Open chapter list"
 msgstr "打开章节列表"
 

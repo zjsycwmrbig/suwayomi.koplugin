@@ -45,6 +45,13 @@ function Methods:showNotImplemented(message)
     self:showMessage(message)
 end
 
+function Methods:openSuwayomiHome()
+    if self.needsOnboardingSetup and self:needsOnboardingSetup() then
+        return self:showOnboardingSetup({ first_run = true })
+    end
+    return self:showHome()
+end
+
 
 function Methods:showTopLevelScreen(route_id, callback)
     local widget = callback()
@@ -266,7 +273,13 @@ end
 
 
 function Methods:onSuwayomiAction()
-    self:showNotImplemented(I18n.t("Open Search > Suwayomi to access the plugin menu."))
+    return self:openSuwayomiHome()
+end
+
+
+-- SimpleUI quick actions call this method when no native launcher is available.
+function Methods:_sui_launch()
+    return self:openSuwayomiHome()
 end
 
 

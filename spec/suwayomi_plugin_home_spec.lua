@@ -12,11 +12,44 @@ describe("suwayomi/plugin/home", function()
 
     it("exports the home/menu methods as a controller boundary", function()
         helper.assertControllerModule("suwayomi/plugin/home", {
+            "_sui_launch",
+            "onSuwayomiAction",
+            "openSuwayomiHome",
             "showHome",
             "showMessage",
             "withLoadingMessage",
             "addToMainMenu",
         })
+    end)
+
+    it("opens the plugin home from native and SimpleUI launchers", function()
+        helper.stubControllerDependencies()
+        package.loaded["suwayomi/plugin/home"] = nil
+        local methods = require("suwayomi/plugin/home").methods
+        local launched = 0
+        local plugin = setmetatable({
+            needsOnboardingSetup = function() return false end,
+            showHome = function() launched = launched + 1 return "home" end,
+        }, { __index = methods })
+
+        assert.are.equal("home", plugin:onSuwayomiAction())
+        assert.are.equal("home", plugin:_sui_launch())
+        assert.are.equal(2, launched)
+    end)
+
+    it("routes launchers through first-run setup when required", function()
+        helper.stubControllerDependencies()
+        package.loaded["suwayomi/plugin/home"] = nil
+        local methods = require("suwayomi/plugin/home").methods
+        local setup_options
+        local plugin = setmetatable({
+            needsOnboardingSetup = function() return true end,
+            showOnboardingSetup = function(_, options) setup_options = options return "setup" end,
+            showHome = function() error("home must wait for setup") end,
+        }, { __index = methods })
+
+        assert.are.equal("setup", plugin:_sui_launch())
+        assert.are.same({ first_run = true }, setup_options)
     end)
 
     it("opens first-run setup from the main menu before showing home", function()
