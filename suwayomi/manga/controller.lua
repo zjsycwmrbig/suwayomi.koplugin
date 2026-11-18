@@ -66,6 +66,15 @@ local function findReturnedChapterItemNumber(chapters, context)
     return nil
 end
 
+local function findFirstUnreadItemNumber(chapters)
+    for index, chapter in ipairs(type(chapters) == "table" and chapters or {}) do
+        if chapter and chapter.is_read ~= true then
+            return index
+        end
+    end
+    return nil
+end
+
 local function hasSourceId(source)
     return type(source) == "table" and source.id ~= nil and tostring(source.id):match("%S") ~= nil
 end
@@ -80,18 +89,6 @@ end
 
 local function notify(owner, message)
     owner:showMessage(message, { timeout = 3, toast = true })
-end
-
-local DOWNLOAD_MANAGER_FILTERS = {
-    all = true,
-    undownloaded = true,
-    downloaded = true,
-    failed = true,
-    active = true,
-}
-
-local function normalizeDownloadManagerFilter(filter)
-    return DOWNLOAD_MANAGER_FILTERS[filter] and filter or nil
 end
 
 local function saveChapterListing(owner, manga, chapters)
@@ -466,6 +463,114 @@ function Methods:openReaderReturnCloseTarget(target)
     return nil
 end
 
+local function sameManga(left, right)
+    if type(left) ~= "table" or type(right) ~= "table" then return false end
+    return tostring(left.id or left.title or "") == tostring(right.id or right.title or "")
+end
+
+function Methods:getMangaLocalDownloadChapters(manga)
+    local chapters, seen = {}, {}
+    local function add(chapter)
+        local id = chapter and (chapter.id or chapter.chapter_id)
+        if id == nil or tostring(id) == "" then return end
+        local key = tostring(id)
+        if not seen[key] then
+            seen[key] = true
+            chapters[#chapters + 1] = chapter
+        end
+    end
+    for _, chapter in ipairs(self.getRecoveredChapters and self:getRecoveredChapters(manga) or {}) do
+        add(chapter)
+    end
+    local context = getLoadedMangaChapterContext(self, manga)
+    for _, chapter in ipairs(context and context.chapters or {}) do
+        if self:isChapterDownloaded(manga, chapter) then add(chapter) end
+    end
+    return chapters
+end
+
+function Methods:cancelMangaDownloadJobs(manga)
+    if not self.getDownloadQueue then return 0, 0 end
+    local queue = self:getDownloadQueue()
+    local snapshot = queue:getSnapshot()
+    local cancelled, failed = 0, 0
+    for _, collection in ipairs({ snapshot.active or {}, snapshot.queued or {} }) do
+        for _, job in ipairs(collection) do
+            if sameManga(job.manga, manga) then
+                local ok = queue:cancelPending(job.manga, job.chapter)
+                if ok then cancelled = cancelled + 1 else failed = failed + 1 end
+            end
+        end
+    end
+    return cancelled, failed
+end
+
+function Methods:deleteMangaDownloads(manga)
+    local report = {
+        total = 0,
+        deleted = 0,
+        missing = 0,
+        failed = 0,
+        cancelled = 0,
+        cancel_failed = 0,
+    }
+    local queue = self.getDownloadQueue and self:getDownloadQueue() or nil
+    if queue then
+        if queue.refill and queue.refill.setPolicy then
+            local policy_ok = queue.refill:setPolicy(manga, 0)
+            if not policy_ok then report.failed = report.failed + 1 end
+        end
+        if queue.settings and queue.setMangaPaused
+            and queue:setMangaPaused(manga, false) == nil then
+            report.failed = report.failed + 1
+        end
+        report.cancelled, report.cancel_failed = self:cancelMangaDownloadJobs(manga)
+        report.failed = report.failed + report.cancel_failed
+    end
+
+    local chapters = self:getMangaLocalDownloadChapters(manga)
+    report.total = #chapters
+    for _, chapter in ipairs(chapters) do
+        local ok, state = self:deleteChapterFromDeviceWithOptions(manga, chapter, {
+            quiet_active = true,
+            quiet_delete_failed = true,
+            quiet_missing = true,
+            skip_refresh = true,
+        })
+        if ok and (state == "deleted" or state == "queued" or state == nil) then
+            report.deleted = report.deleted + 1
+        elseif state == "missing" then
+            report.missing = report.missing + 1
+        else
+            report.failed = report.failed + 1
+        end
+    end
+    if SuwayomiSettings.saveMangaDeletePolicy then
+        local saved, err = SuwayomiSettings:saveMangaDeletePolicy(manga, nil)
+        if not saved and err ~= nil then report.failed = report.failed + 1 end
+    end
+    if self.refreshChapterMenu and getLoadedMangaChapterContext(self, manga) then
+        self:refreshChapterMenu({ quick = true })
+    end
+    return report
+end
+
+local function showMangaDownloadRemovalReport(self, report)
+    if not report or (report.total == 0 and report.failed == 0) then return end
+    local parts = {}
+    if report.deleted > 0 then
+        parts[#parts + 1] = I18n.count(report.deleted,
+            "Deleted %1 local chapter download.",
+            "Deleted %1 local chapter downloads.")
+    end
+    if report.failed > 0 then
+        parts[#parts + 1] = I18n.count(report.failed,
+            "Could not remove %1 local download.",
+            "Could not remove %1 local downloads.")
+    end
+    if #parts > 0 then self:showMessage(table.concat(parts, " ")) end
+end
+
 
 function Methods:showChapterResultForManga(manga, result, options)
     if self.suwayomi_host_retired then return false end
@@ -509,15 +614,14 @@ function Methods:showChapterResultForManga(manga, result, options)
 
         local chapter_menu
         self.current_chapter_options = chapter_options
-        self.current_chapter_options.itemnumber = findReturnedChapterItemNumber(chapters, options.return_context)
+        self.current_chapter_options.itemnumber =
+            findReturnedChapterItemNumber(chapters, options.return_context)
+            or findFirstUnreadItemNumber(chapters)
         local reader_return_close_target = options.reader_return_close_target
         self.current_chapter_options.close_callback = function()
             local is_current_menu = self.current_chapter_menu == chapter_menu
             if is_current_menu then
                 self.current_chapter_menu = nil
-                self.download_manager_filter = nil
-                self.download_manager_chapters = nil
-                self.download_manager_counts = nil
                 self:cancelMangaNetworkRequests()
             end
             if is_current_menu
@@ -550,7 +654,6 @@ end
 function Methods:showChaptersForManga(manga, options)
     if self.suwayomi_host_retired or type(manga) ~= "table" then return false end
     options = copyOptions(options)
-    self.download_manager_filter = normalizeDownloadManagerFilter(options.download_manager_filter)
     local credentials = SuwayomiSettings:load()
     local scope = SuwayomiSettings:normalizeEndpointScope(credentials.server_url)
     if manga.endpoint_scope and manga.endpoint_scope ~= scope then return false end
@@ -571,12 +674,6 @@ function Methods:showChaptersForManga(manga, options)
         return self:startRefreshMangaForChapters(manga, options)
     end
     return self:startFetchChaptersForManga(manga, options)
-end
-
-function Methods:showDownloadChaptersForManga(manga, filter)
-    filter = normalizeDownloadManagerFilter(filter) or "all"
-    self.download_manager_filter = filter
-    return self:showChaptersForManga(manga, { download_manager_filter = filter })
 end
 
 
@@ -613,7 +710,6 @@ end
 
 function Methods:getMangaInformationActions(manga)
     local actions = {
-        { id = "download_management", text = I18n.t("Download management") },
         { id = "open_chapters", text = I18n.t("Open chapters") },
     }
     if MangaActionMenu.canOpenFirstUnread(self, manga) then
@@ -696,6 +792,9 @@ function Methods:setMangaLibraryState(manga, in_library, options)
         end
 
         self:updateMangaFromLibraryStateResponse(manga, response.manga, in_library)
+        if in_library ~= true and self.deleteMangaDownloads then
+            showMangaDownloadRemovalReport(self, self:deleteMangaDownloads(manga))
+        end
         if options.onMangaUpdated then
             options.onMangaUpdated(manga)
         end
@@ -725,9 +824,22 @@ function Methods:confirmRemoveMangaFromLibrary(manga, options)
     local callback = function()
         self:setMangaLibraryState(manga, false, options)
     end
+    local local_downloads = self.getMangaLocalDownloadChapters
+        and #(self:getMangaLocalDownloadChapters(manga) or {}) or 0
+    local confirmation = I18n.f(
+        "Remove %1 from your Suwayomi library?",
+        manga.title or tostring(manga.id)
+    )
+    if local_downloads > 0 then
+        confirmation = confirmation .. "\n\n" .. I18n.count(
+            local_downloads,
+            "This will also delete %1 downloaded chapter from this device.",
+            "This will also delete %1 downloaded chapters from this device."
+        )
+    end
     if SuwayomiUI.showConfirm then
         SuwayomiUI.showConfirm({
-            text = I18n.f("Remove %1 from your Suwayomi library?", manga.title or tostring(manga.id)),
+            text = confirmation,
             ok_text = I18n.t("Remove"),
             ok_callback = callback,
             cancel_text = I18n.t("Cancel"),
@@ -798,9 +910,6 @@ function Methods:performMangaAction(manga, action_id, options)
     if action_id == "open_chapters" then
         self:showChaptersForManga(manga)
         return true
-    end
-    if action_id == "download_management" then
-        return self:showDownloadChaptersForManga(manga, "all")
     end
     if action_id == "manga_information" then
         if SuwayomiUI.showMangaInformation then

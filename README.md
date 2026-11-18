@@ -32,14 +32,14 @@ To update a manual install, quit KOReader, replace the plugin folder with the ne
 
 You can repeat setup from **Suwayomi > Settings > Setup wizard**.
 
-Simple Login and UI Login reconnect automatically using saved credentials; session cookies and JWT tokens are never saved. If authentication fails during a download, correct your login settings and retry it from that manga's **Download management** screen.
+Simple Login and UI Login reconnect automatically using saved credentials; session cookies and JWT tokens are never saved. If authentication fails during a download, correct your login settings and retry it from the manga's chapter list.
 
 Use HTTPS when connecting over a network. HTTP remains supported but exposes passwords and session tokens to network observers. Suwayomi UI Login tokens can remain valid after the server password changes; changing saved credentials does not cancel already-running downloads.
 
 ## Read
 
 1. Open **Search > Suwayomi** to enter Library, using your category-picker preference.
-2. Choose a manga, then open **Download management** to manage device downloads or **Open chapters** to browse normally.
+2. Choose a manga to open its complete chapter directory. The menu starts at the first unread chapter.
 3. Use **Go to Suwayomi** from the reader to return to the chapter list.
 
 Library defaults to **Latest arrivals**, with recently discovered chapters' manga first. On a manga list, the title-bar menu offers **Sort by latest arrivals** and **Sort by title**, with a checkmark for the displayed order. Selecting either choice, including the active one, returns to the first page. Category changes and Refresh keep the choice; ordinary refresh keeps the current page when possible. Your explicit choice is saved for Library reopening, reader return, and KOReader restart, including offline. A failed or unconfirmed save keeps the current order usable and reports that persistence could not be confirmed; reopening uses the confirmed or resolved settings. **Latest found** is the server's discovery date, including imported backlog and already-read chapters. **Server unread**, Latest found, and Latest arrivals follow each manga's saved scanlator filter; unrestricted manga use **All scanlators**. An excluded release changes neither the filtered count nor arrival order. A confirmed empty matching set shows zero unread and an unknown arrival date. Missing filtered metadata stays unknown; failed reads may retain confirmed information for the same endpoint, manga, and filter, with a status indication. Confirmed values remain available offline and after restart. Counts are server observations, not total chapters, downloads, or new chapters since your last visit. **Sync pending** indicates matching recorded local read/unread choices awaiting synchronization; rendering does not subtract those choices from counts. Refresh reads known server information using bounded filtered queries; it does not discover chapters from sources.
@@ -58,6 +58,11 @@ placeholders.
 The title-bar menu offers **Library** and **Suwayomi home**. Home provides **Browse** for source search and extensions, **Sync** for pending read/unread changes, and **Settings**. Back from the Library root exits the plugin.
 
 Browse manga results default to List when no view preference is saved. Existing saved choices are preserved. Tap the small menu icon at the bottom left to choose **List**, **Cover only**, or **Cover with text** (titles below the covers). Your choice is saved, and switching views keeps your place. Tap a manga to open it. Grids adapt to the screen width; paging and status messages remain full-width rows.
+
+The Browse source-language filter persists independently of the viewing language.
+Chinese is selected by default when no source-language preference has been saved.
+Adding or removing a language updates the source list immediately and is retained
+across plugin and KOReader restarts.
 
 ### Read offline
 
@@ -88,30 +93,32 @@ saved and takes effect immediately without changing KOReader's language. Before
 an explicit choice, a Chinese KOReader locale selects Chinese; others use English.
 Settings also contains **Sync** and **Close plugin**.
 
-Open a manga, then choose **Download management** from its information or action
-menu. This opens that manga's complete chapter list with download status filters,
-selection, missing-chapter downloads, per-manga pause/resume, task cancellation,
-downloaded-file removal, and Auto-download controls. Chapter rows keep the normal
-Open, Download, Delete, read-state, and **Mark previous as read** actions.
+Download controls live in the manga's ordinary chapter directory. Its title menu
+offers selection-based downloads, **Download options**, **Auto-download**,
+per-manga pause/resume, task cancellation, **Delete read downloads**, **Delete
+downloaded chapters**, and **Per-manga delete policy**. Chapter rows keep the
+normal Open, Download, Delete, read-state, and **Mark previous as read** actions.
+
+The per-manga delete policy controls both deletion after a manual read mark and
+automatic retention of finished chapters. Each value can follow the global
+default or override it for that manga; overrides take precedence everywhere the
+chapter is read, closed, or updated.
 
 Pausing a manga stops new queued transfers while the current active chapter
 finishes. Pause survives restart and preserves jobs, retry budgets, and
 destinations. Resume restarts interrupted chapter attempts; it does not resume
 partial bytes. A completed archive published during stopping is preserved.
 
-The download manager's destructive actions remove only that manga's selected or
+The chapter menu's destructive actions remove only that manga's selected or
 downloaded CBZs, after confirmation. Ordinary deletion removes the CBZ and its
 KOReader sidecars while preserving server files and read flags. Read cleanup uses
 local ledger read state and honors explicit pending unread choices; unregistered files are never guessed
 to be read. Open, busy, replaced, conflicting, or unproved files are skipped.
 
-The inventory includes recorded existing files and CBZs in the configured download
-folder/subfolders, not unrelated files elsewhere on the Kindle. Symlinks and
-partial files are excluded. Scanning is bounded at 20 directory levels and 20,000
-entries, with an incomplete-list notice when necessary. Recorded files outside
-the current download root remain visible but cannot be deleted through this
-screen. Use **Refresh** to pick up external file changes; selecting rows does not
-rescan folders or adopt server identities.
+Removing a manga from the Suwayomi library also disables its Auto-download,
+clears its per-manga delete policy, cancels its queued transfer work, and deletes
+its recorded local chapter files. Files that cannot be removed safely are
+reported and preserved.
 
 Manual read/unread changes use the chapter's server identity independently of
 local download registration. If an archive exists without a verified association,
@@ -146,7 +153,7 @@ Your device still needs to connect to copy chapters. Plugin **Auto-download** an
 - **Plugin missing?** Check that its folder is named `suwayomi.koplugin`, then restart KOReader.
 - **Can't connect?** Check that the server is running and reachable from your device, and verify your URL and credentials.
 - **Source missing?** Install or update its extension from **Browse**. Check **Show NSFW sources** in Browse settings if relevant.
-- **Download failed?** Open the manga's **Download management**, filter to **Failed**, then tap the chapter for details or Retry. For an archive warning, use **Verify download**; use **Redownload** if it reports damage.
+- **Download failed?** Open the manga's chapter directory, tap the failed chapter for details or Retry. For an archive warning, use **Verify download**; use **Redownload** if it reports damage.
 
 Still stuck? [Open an issue](https://github.com/LK4D4/suwayomi.koplugin/issues). Include your KOReader and Suwayomi versions and what happened, but leave out credentials and private library details.
 

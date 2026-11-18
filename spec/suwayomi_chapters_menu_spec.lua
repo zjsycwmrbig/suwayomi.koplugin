@@ -90,11 +90,13 @@ describe("suwayomi/chapters/menu", function()
         assert.are.equal("select_all", captured_title_options.actions[1].id)
         assert.are.equal("select_chapters", captured_title_options.actions[2].id)
         assert.are.equal("select_range", captured_title_options.actions[3].id)
-        assert.are.equal("download_management", captured_title_options.actions[4].id)
-        assert.are.equal("manga_information", captured_title_options.actions[5].id)
-        assert.are.equal("open_first_unread", captured_title_options.actions[6].id)
-        assert.are.equal("refresh_chapters", captured_title_options.actions[7].id)
-        assert.are.equal("remove_from_library", captured_title_options.actions[8].id)
+        assert.are.equal("manga_information", captured_title_options.actions[4].id)
+        assert.are.equal("open_first_unread", captured_title_options.actions[5].id)
+        assert.are.equal("refresh_chapters", captured_title_options.actions[6].id)
+        assert.are.equal("remove_from_library", captured_title_options.actions[7].id)
+        assert.are.equal("keep_downloaded", captured_title_options.actions[8].id)
+        assert.are.equal("bulk_downloads", captured_title_options.actions[9].id)
+        assert.are.equal("delete_policy", captured_title_options.actions[10].id)
         assert.is_true(captured_title_options.vertical)
         assert.is_true(captured_title_options.destructive_actions_at_bottom)
 
@@ -103,10 +105,6 @@ describe("suwayomi/chapters/menu", function()
         end
         captured_title_options.onSelect({ id = "manga_information" }, nil, { anchor = anchor })
         assert.are.equal("manga_information", performed_action)
-        assert.are.equal(anchor, performed_menu_context and performed_menu_context.anchor)
-
-        captured_title_options.onSelect({ id = "download_management" }, nil, { anchor = anchor })
-        assert.are.equal("download_management", performed_action)
         assert.are.equal(anchor, performed_menu_context and performed_menu_context.anchor)
     end)
 
@@ -166,7 +164,7 @@ describe("suwayomi/chapters/menu", function()
 
         assert.are.equal("Chapter downloads", shown_menus[3].title)
         assert.are.equal(anchor, shown_menus[3].anchor)
-        assert.are.equal("refresh_chapters", shown_menus[3].actions[6].id)
+        assert.are.equal("refresh_chapters", shown_menus[3].actions[5].id)
 
         package.preload["suwayomi/ui"] = nil
         package.loaded["suwayomi/ui"] = nil
@@ -318,13 +316,12 @@ describe("suwayomi/chapters/menu", function()
         assert.is_nil(action_ids.mark_through_read)
     end)
 
-    it("filters download-manager chapter rows while preserving read actions", function()
+    it("shows every chapter row now that download-management filtering is removed", function()
         helper.stubControllerDependencies()
         package.loaded["suwayomi/chapters/menu"] = nil
         local ChapterMenu = require("suwayomi/chapters/menu")
         local built
         local plugin = {
-            download_manager_filter = "undownloaded",
             current_chapter_context = { manga = { id = "m1" }, chapters = {} },
         }
         for name, method in pairs(ChapterMenu.methods) do
@@ -361,8 +358,8 @@ describe("suwayomi/chapters/menu", function()
             { id = "queued" },
         }, {})
 
-        assert.are.equal(1, #built)
-        assert.are.equal("undownloaded", built[1].chapter.id)
+        assert.are.equal(4, #built)
+        assert.are.equal("downloaded", built[1].chapter.id)
         local action_ids = {}
         for _, action in ipairs(plugin:getChapterActions({ id = "m1" }, built[1].chapter)) do
             action_ids[action.id] = true
@@ -371,7 +368,7 @@ describe("suwayomi/chapters/menu", function()
         assert.is_true(action_ids.mark_previous_read)
     end)
 
-    it("builds focused actions for the per-manga download manager", function()
+    it("keeps download controls inside the chapter directory without a management mode", function()
         helper.stubControllerDependencies()
         package.loaded["suwayomi/chapters/menu"] = nil
         local ChapterMenu = require("suwayomi/chapters/menu")
@@ -380,14 +377,13 @@ describe("suwayomi/chapters/menu", function()
                 manga = { id = "m1", title = "Manga" },
                 chapters = { { id = "1" }, { id = "2" }, { id = "3" } },
             },
-            download_manager_filter = "all",
-            download_manager_counts = { all = 3, undownloaded = 2, downloaded = 1, failed = 0, active = 0 },
-            download_manager_chapters = { { id = "1" }, { id = "2" }, { id = "3" } },
         }
         for name, method in pairs(ChapterMenu.methods) do plugin[name] = method end
         function plugin:getSelectedChapterCount() return 0 end
         function plugin:getVisibleChapters(chapters) return chapters end
         function plugin:getChapterScanlatorChoices() return {} end
+        function plugin:getDownloadedChaptersFromCurrentContext() return { { id = "1" }, { id = "2" } } end
+        function plugin:getReadDownloadedChaptersFromCurrentContext() return { { id = "1" } } end
         function plugin:getDownloadQueue()
             return {
                 getSnapshot = function() return { active = {}, queued = {}, failed = {}, refills = {} } end,
@@ -395,16 +391,15 @@ describe("suwayomi/chapters/menu", function()
             }
         end
 
-        local actions = plugin:getDownloadManagerActions()
-        assert.are.equal("download_filter", actions[1].id)
-        assert.are.equal("Filter: All chapters (3)", actions[1].text)
-        assert.are.equal("Select all shown (3)", actions[2].text)
-        assert.are.equal("download_all_missing", actions[5].id)
-        assert.are.equal("Download missing chapters (2)", actions[5].text)
+        local actions = plugin:getDirectoryDownloadActions()
+        assert.are.equal("keep_downloaded", actions[1].id)
+        assert.are.equal("bulk_downloads", actions[2].id)
+        assert.are.equal("delete_policy", actions[3].id)
+        assert.are.equal("delete_read_downloaded", actions[4].id)
+        assert.are.equal("Delete read downloads (1)", actions[4].text)
+        assert.are.equal("delete_all_downloaded", actions[5].id)
+        assert.are.equal("Delete downloaded chapters (2)", actions[5].text)
         assert.are.equal("toggle_manga_pause", actions[6].id)
-        assert.are.equal("delete_all_downloaded", actions[7].id)
-        assert.are.equal("keep_downloaded", actions[8].id)
-        assert.are.equal("bulk_downloads", actions[9].id)
     end)
 
     it("keeps damaged and unverified local archives visible with distinct recovery actions", function()
@@ -555,11 +550,13 @@ describe("suwayomi/chapters/menu", function()
         assert.is_nil(bulk_actions[1].submenu)
         assert.are.equal("select_chapters", bulk_actions[2].id)
         assert.are.equal("select_range", bulk_actions[3].id)
-        assert.are.equal("download_management", bulk_actions[4].id)
-        assert.are.equal("manga_information", bulk_actions[5].id)
-        assert.are.equal("refresh_chapters", bulk_actions[6].id)
-        assert.are.equal("scanlator_filter", bulk_actions[7].id)
-        assert.is_true(bulk_actions[7].submenu)
+        assert.are.equal("manga_information", bulk_actions[4].id)
+        assert.are.equal("refresh_chapters", bulk_actions[5].id)
+        assert.are.equal("keep_downloaded", bulk_actions[6].id)
+        assert.are.equal("bulk_downloads", bulk_actions[7].id)
+        assert.are.equal("delete_policy", bulk_actions[8].id)
+        assert.are.equal("scanlator_filter", bulk_actions[9].id)
+        assert.is_true(bulk_actions[9].submenu)
     end)
 
     it("offers cancel all downloads from the chapter title menu", function()
@@ -600,8 +597,8 @@ describe("suwayomi/chapters/menu", function()
 
         local actions = plugin:getBulkChapterActions()
 
-        assert.are.equal("cancel_all_downloads", actions[#actions].id)
-        assert.are.equal("Cancel all downloads", actions[#actions].text)
+        assert.are.equal("cancel_manga_downloads", actions[#actions].id)
+        assert.are.equal("Cancel all tasks for this manga", actions[#actions].text)
         assert.is_true(actions[#actions].destructive)
     end)
 
@@ -743,6 +740,85 @@ describe("suwayomi/chapters/menu", function()
         assert.are.equal("tx:Scanlator filter", shown_menus[2].title)
         assert.are.equal("tx:All scanlators", shown_menus[2].actions[1].text)
         assert.are.equal("Alpha", shown_menus[2].actions[2].text)
+    end)
+
+    it("saves per-manga delete overrides from the chapter directory", function()
+        helper.stubControllerDependencies()
+        local saved_policy
+        package.preload["suwayomi/settings"] = function()
+            return {
+                load = function()
+                    return { server_url = "https://suwayomi.example" }
+                end,
+                normalizeEndpointScope = function(_, url) return url end,
+                loadDeleteChaptersSettings = function()
+                    return {
+                        delete_after_mark_read = false,
+                        delete_finished_while_reading = 1,
+                    }
+                end,
+                loadMangaDeletePolicy = function()
+                    return saved_policy
+                end,
+                saveMangaDeletePolicy = function(_, _, policy)
+                    saved_policy = policy
+                    return policy
+                end,
+                resolveDeleteChaptersSettings = function()
+                    local effective = {
+                        delete_after_mark_read = false,
+                        delete_finished_while_reading = 1,
+                    }
+                    if saved_policy then
+                        for key, value in pairs(saved_policy) do effective[key] = value end
+                    end
+                    return effective, saved_policy
+                end,
+            }
+        end
+        package.loaded["suwayomi/settings"] = nil
+        package.loaded["suwayomi/chapters/menu"] = nil
+        local shown_actions, shown_choice, refresh_count
+        package.preload["suwayomi/ui"] = function()
+            return {
+                showChapterActionsMenu = function(options, onSelect)
+                    shown_actions = options
+                    shown_actions.onSelect = onSelect
+                    return options
+                end,
+                showChoiceDialog = function(options)
+                    shown_choice = options
+                    return options
+                end,
+            }
+        end
+        package.loaded["suwayomi/ui"] = nil
+        local ChapterMenu = require("suwayomi/chapters/menu")
+        local plugin = {
+            current_chapter_context = {
+                manga = { id = "m1", title = "Manga" },
+                chapters = {},
+            },
+        }
+        for name, method in pairs(ChapterMenu.methods) do plugin[name] = method end
+        function plugin:refreshChapterMenu()
+            refresh_count = (refresh_count or 0) + 1
+        end
+
+        assert.is_true(plugin:showMangaDeletePolicy({ anchor = "anchor" }))
+        assert.are.equal("Per-manga delete policy", shown_actions.title)
+        assert.are.equal("When marked read: Follow global (no)", shown_actions.actions[1].text)
+        assert.are.equal("Auto-delete finished: Follow global (Keep none)", shown_actions.actions[2].text)
+
+        shown_actions.onSelect({ id = "delete_finished_policy" }, nil, {})
+        assert.are.equal("Auto-delete finished chapters", shown_choice.title)
+        shown_choice.onSelect(3)
+
+        assert.are.equal(3, saved_policy.delete_finished_while_reading)
+        assert.are.equal(1, refresh_count)
+
+        package.preload["suwayomi/settings"] = nil
+        package.preload["suwayomi/ui"] = nil
     end)
 
 end)

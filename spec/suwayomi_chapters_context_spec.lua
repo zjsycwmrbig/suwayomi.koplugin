@@ -111,18 +111,16 @@ describe("suwayomi/chapters/context", function()
         assert.is_false(plugin.selection_mode)
     end)
 
-    it("selects only chapters currently shown by the download manager filter", function()
+    it("selects every chapter in the normal directory", function()
         local manga = { id = "m1" }
         local chapters = { { id = "1" }, { id = "2" }, { id = "3" } }
         local plugin = installPlugin({
             current_chapter_context = { manga = manga, chapters = chapters },
-            download_manager_filter = "undownloaded",
-            download_manager_chapters = { chapters[2] },
             refreshChapterMenu = function() end,
         })
 
-        assert.are.equal(1, plugin:selectAllChapters())
-        assert.are.same({ chapters[2] }, plugin:getSelectedChapters(manga, chapters))
+        assert.are.equal(3, plugin:selectAllChapters())
+        assert.are.same(chapters, plugin:getSelectedChapters(manga, chapters))
     end)
 
     it("selects the next saved chapter by source order and exact saved scanlator, regardless of reads", function()

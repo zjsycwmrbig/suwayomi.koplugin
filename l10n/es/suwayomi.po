@@ -26,9 +26,6 @@ msgstr ""
 msgid " (Suwayomi id %1)"
 msgstr ""
 
-msgid "%1 (%2)"
-msgstr ""
-
 msgctxt "source filter sort summary"
 msgid "%1 - Ascending"
 msgstr ""
@@ -176,10 +173,10 @@ msgid "Any"
 msgstr ""
 
 msgid ""
-"Applies when you manually mark chapters read in the plugin. Removes the "
-"downloaded file but keeps reading data. If a chapter is still downloading, "
-"request deletion again after it finishes. Turning this off does not cancel "
-"deletion requests already accepted."
+"Applies to manga without a per-manga override. When a chapter is manually "
+"marked read, removes its downloaded file but keeps reading data. If a "
+"chapter is still downloading, request deletion again after it finishes. "
+"Turning this off does not cancel deletion requests already accepted."
 msgstr ""
 
 msgid "Apply filters"
@@ -219,6 +216,12 @@ msgid "Authentication: %1"
 msgstr ""
 
 msgid "Author"
+msgstr ""
+
+msgid "Auto-delete finished chapters"
+msgstr ""
+
+msgid "Auto-delete finished: %1"
 msgstr ""
 
 msgid "Auto-download"
@@ -568,6 +571,11 @@ msgstr ""
 msgid "Could not refresh Library. Showing retained information."
 msgstr ""
 
+msgid "Could not remove %1 local download."
+msgid_plural "Could not remove %1 local downloads."
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "Could not replace settings."
 msgstr ""
 
@@ -647,6 +655,20 @@ msgstr ""
 msgid "Current active chapter finishes; queued chapters wait."
 msgstr ""
 
+msgid "Default delete after reading: %1"
+msgstr ""
+
+msgid "Default delete when marked read: %1"
+msgstr ""
+
+msgid ""
+"Default for manga without a per-manga override. Keeps the chapters finished "
+"most recently in each manga, not the highest chapter numbers. A chapter "
+"counts after you or KOReader mark it finished and you close it, or you "
+"manually mark it read in the plugin. Open chapters are not deleted. Off "
+"disables only this setting."
+msgstr ""
+
 msgid "Delete"
 msgstr ""
 
@@ -678,9 +700,6 @@ msgstr[1] ""
 msgid "Delete after reading"
 msgstr ""
 
-msgid "Delete after reading: %1"
-msgstr ""
-
 msgid "Delete all local downloads"
 msgstr ""
 
@@ -688,6 +707,9 @@ msgid "Delete all read local downloads"
 msgstr ""
 
 msgid "Delete chapter settings are unavailable."
+msgstr ""
+
+msgid "Delete download"
 msgstr ""
 
 msgid "Delete downloaded chapters (%1)"
@@ -708,23 +730,25 @@ msgstr ""
 msgid "Delete from device"
 msgstr ""
 
+msgid "Delete read downloads (%1)"
+msgstr ""
+
 msgid "Delete saved filter"
 msgstr ""
 
 msgid "Delete saved filter \"%1\"?"
 msgstr ""
 
-msgid "Delete selected downloads"
-msgstr ""
-
 msgid "Delete selected local downloads"
-msgstr ""
-
-msgid "Delete when marked read: %1"
 msgstr ""
 
 msgid "Deleted %1 downloads; %2 could not be deleted."
 msgstr ""
+
+msgid "Deleted %1 local chapter download."
+msgid_plural "Deleted %1 local chapter downloads."
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "Deleted %1 local downloads; %2 skipped or failed."
 msgstr ""
@@ -755,9 +779,6 @@ msgstr ""
 msgid ""
 "Download belongs to a different server. Restore the original server in "
 "Connection settings, then Retry."
-msgstr ""
-
-msgid "Download chapter filter"
 msgstr ""
 
 msgid "Download damaged; redownload"
@@ -793,15 +814,6 @@ msgstr ""
 msgid "Download is no longer queued."
 msgstr ""
 
-msgid "Download management"
-msgstr ""
-
-msgid "Download management: %1"
-msgstr ""
-
-msgid "Download missing chapters (%1)"
-msgstr ""
-
 msgid "Download next %1 (up to 50 new)"
 msgstr ""
 
@@ -825,6 +837,9 @@ msgstr ""
 msgid "Download next and auto-download"
 msgstr ""
 
+msgid "Download options"
+msgstr ""
+
 msgid "Download selected"
 msgstr ""
 
@@ -839,7 +854,7 @@ msgstr ""
 msgid "Download the chapter first."
 msgstr ""
 
-msgid "Download this chapter from Suwayomi Download management first."
+msgid "Download this chapter from the manga chapter list first."
 msgstr ""
 
 msgid "Download undownloaded chapters"
@@ -960,9 +975,6 @@ msgstr ""
 msgid "Filter name"
 msgstr ""
 
-msgid "Filter: %1"
-msgstr ""
-
 msgid "Finishing and deletion"
 msgstr ""
 
@@ -976,6 +988,9 @@ msgid "First 50 unread"
 msgstr ""
 
 msgid "First unread"
+msgstr ""
+
+msgid "Follow global (%1)"
 msgstr ""
 
 msgid "Genres"
@@ -1033,17 +1048,14 @@ msgstr[1] ""
 msgid "Keep disabled"
 msgstr "Mantener desactivado"
 
+#, fuzzy
+msgid "Keep download"
+msgstr "Mantener desactivado"
+
 msgid "Keep downloading"
 msgstr ""
 
 msgid "Keep none"
-msgstr ""
-
-msgid ""
-"Keeps the chapters finished most recently in each manga, not the highest "
-"chapter numbers. A chapter counts after you or KOReader mark it finished and "
-"you close it, or you manually mark it read in the plugin. Open chapters are "
-"not deleted. Off disables only this setting."
 msgstr ""
 
 msgctxt "source mode"
@@ -1172,9 +1184,6 @@ msgid ""
 "Manual mark-read deletion preserves reading data and backups. Marking the "
 "chapter unread cancels pending deletion. A new Download or Retry action also "
 "cancels it once accepted; failed requests and automatic downloads do not."
-msgstr ""
-
-msgid "More download options"
 msgstr ""
 
 msgid "Never ask"
@@ -1318,6 +1327,9 @@ msgctxt "source filter state"
 msgid "Off"
 msgstr ""
 
+msgid "On"
+msgstr ""
+
 msgctxt "source filter state"
 msgid "On"
 msgstr ""
@@ -1378,6 +1390,9 @@ msgid "Paused queued downloads for this manga."
 msgstr ""
 
 msgid "Pending read changes are not associated with the configured server."
+msgstr ""
+
+msgid "Per-manga delete policy"
 msgstr ""
 
 msgctxt "source mode"
@@ -1578,9 +1593,6 @@ msgid "Search: %1"
 msgstr ""
 
 msgid "Select all"
-msgstr ""
-
-msgid "Select all shown (%1)"
 msgstr ""
 
 msgid "Select chapters"
@@ -1835,6 +1847,11 @@ msgstr ""
 msgid "This source has no manga."
 msgstr ""
 
+msgid "This will also delete %1 downloaded chapter from this device."
+msgid_plural "This will also delete %1 downloaded chapters from this device."
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "Timed out."
 msgstr ""
 
@@ -1927,6 +1944,12 @@ msgid "Waiting to check which unread chapters need downloading."
 msgstr ""
 
 msgid "When auto-download runs"
+msgstr ""
+
+msgid "When marked read"
+msgstr ""
+
+msgid "When marked read: %1"
 msgstr ""
 
 msgid ""

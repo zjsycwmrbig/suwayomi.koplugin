@@ -73,7 +73,6 @@ function MangaActionMenu.buildMainActions(owner, manga, options)
     local actions = {}
     local destructive_library_action
 
-    table.insert(actions, { id = "download_management", text = I18n.t("Download management") })
     if options.include_open_chapters then
         table.insert(actions, { id = "open_chapters", text = I18n.t("Open chapters") })
     end
@@ -124,7 +123,6 @@ end
 function MangaActionMenu.isSharedAction(action_id)
     if action_id == "manga_information"
         or action_id == "open_first_unread"
-        or action_id == "download_management"
         or action_id == "refresh_chapters"
         or action_id == "add_to_library"
         or action_id == "remove_from_library"

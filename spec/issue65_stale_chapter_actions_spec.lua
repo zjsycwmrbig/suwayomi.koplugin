@@ -12,9 +12,6 @@ describe("issue 65 stale chapter controls", function()
         local menu = {}
         f.plugin.current_chapter_menu = menu
         f.plugin.isSuwayomiScreenActive = function() return true end
-        f.plugin.download_manager_filter = "all"
-        f.plugin.download_manager_counts = { all = 3, undownloaded = 3, downloaded = 0, failed = 0, active = 0 }
-        f.plugin.download_manager_chapters = f.chapters
         f.plugin:showKeepDownloadedActions()
         local old = f.menus[#f.menus].callback
         f.plugin:setCurrentMangaChapterContext(f.manga, f.chapters)

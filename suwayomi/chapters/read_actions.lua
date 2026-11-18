@@ -140,7 +140,9 @@ local function markRead(self, manga, chapters, options, batch, clear_selection)
         return 0, result
     end
     local previous = captureContext(self)
-    local delete_settings = SuwayomiSettings:loadDeleteChaptersSettings()
+    local delete_settings = SuwayomiSettings.resolveDeleteChaptersSettings
+        and SuwayomiSettings:resolveDeleteChaptersSettings(manga)
+        or SuwayomiSettings:loadDeleteChaptersSettings()
     local capture_deletion = delete_settings.delete_after_mark_read == true and not options.skip_delete_after_mark_read
     local root = SuwayomiSettings:loadDownloadDirectory()
     local captures, prepared = {}, {}

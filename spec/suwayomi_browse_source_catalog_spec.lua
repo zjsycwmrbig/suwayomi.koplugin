@@ -61,6 +61,10 @@ local function stubDependencies()
             loadSourceLanguages = function()
                 return { "en" }
             end,
+            saveSourceLanguages = function(_, languages)
+                settings_calls.saved_source_languages = languages
+                return languages
+            end,
             loadSourceCache = function(_, credentials)
                 settings_calls.loaded_cache_for = credentials
                 local server_url = type(credentials) == "table" and credentials.server_url or credentials
@@ -297,6 +301,7 @@ describe("suwayomi/browse/source_catalog", function()
         ui_calls.updated_language_menu.onToggle("en", false)
 
         assert.are.same({ "spanish" }, { ui_calls.updated.sources[1].id })
+        assert.are.same({ "es" }, settings_calls.saved_source_languages)
         assert.are.same({ server_url = "https://suwayomi.example" }, ui_calls.updated.options.thumbnail_credentials)
     end)
 

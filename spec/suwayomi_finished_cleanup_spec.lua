@@ -28,6 +28,11 @@ describe("suwayomi/chapters/finished_cleanup", function()
             loadDeleteChaptersSettings = function()
                 return { delete_finished_while_reading = state.setting }
             end,
+            resolveDeleteChaptersSettings = function(_, manga)
+                local manga_settings = state.manga_settings
+                    and state.manga_settings[tostring(manga and manga.id)]
+                return manga_settings or { delete_finished_while_reading = state.setting }
+            end,
             loadDownloadDirectory = function()
                 return state.download_directory
             end,
@@ -106,6 +111,7 @@ describe("suwayomi/chapters/finished_cleanup", function()
         options = options or {}
         local state = {
             setting = options.setting == nil and 1 or options.setting,
+            manga_settings = clone(options.manga_settings or {}),
             download_directory = options.download_directory or "/downloads",
             journal = clone(options.journal or { version = 1, next_sequence = 1, mangas = {} }),
             journal_error = options.journal_error,
@@ -317,14 +323,20 @@ describe("suwayomi/chapters/finished_cleanup", function()
         assert.are.equal(4, retainedCount(plugin, "m1"))
     end)
 
-    it("disabling cleanup clears history and invalidates scheduled callbacks", function()
-        local plugin = buildPlugin({ setting = 2 })
+    it("disabling the global default preserves manga overrides", function()
+        local plugin = buildPlugin({
+            setting = 2,
+            manga_settings = {
+                m1 = { delete_finished_while_reading = 2 },
+            },
+        })
         record(plugin, "m1", "c1", "/downloads/source/manga/c1.cbz")
-        local callback = plugin.state.scheduled[1].callback
+        record(plugin, "m2", "c1", "/downloads/source/manga/m2-c1.cbz")
         plugin.state.setting = 0
         plugin:onFinishedCleanupSettingChanged(2, 0)
-        assert.are.equal(0, retainedCount(plugin, "m1"))
-        callback()
+        plugin.state.scheduled[#plugin.state.scheduled].callback()
+        assert.are.equal(1, retainedCount(plugin, "m1"))
+        assert.are.equal(0, retainedCount(plugin, "m2"))
         assert.are.equal(0, #plugin.delete_calls)
     end)
 
@@ -730,6 +742,31 @@ describe("suwayomi/chapters/finished_cleanup", function()
         assert.is_nil(journalRecord(plugin, "m1", "c1"))
         assert.is_not_nil(journalRecord(plugin, "m1", "c2"))
         assert.is_false(plugin:cancelFinishedChapter("m1", "missing"))
+    end)
+
+    it("uses per-manga cleanup limits instead of one global limit", function()
+        local plugin = buildPlugin({
+            setting = 3,
+            manga_settings = {
+                m1 = { delete_finished_while_reading = 0 },
+                m2 = { delete_finished_while_reading = 2 },
+            },
+        })
+        local ok, reason = plugin:recordFinishedChapter({
+            read = true,
+            manga_id = "m1",
+            chapter_id = "c1",
+            path = "/downloads/source/m1/c1.cbz",
+        })
+        assert.is_false(ok)
+        assert.are.equal("disabled", reason)
+
+        record(plugin, "m2", "c1", "/downloads/source/m2/c1.cbz")
+        record(plugin, "m2", "c2", "/downloads/source/m2/c2.cbz")
+        local summary = plugin:processFinishedChapterCleanup()
+        assert.are.equal(1, summary.deleted)
+        assert.is_nil(journalRecord(plugin, "m2", "c1"))
+        assert.is_not_nil(journalRecord(plugin, "m2", "c2"))
     end)
 
     it("rejects malformed event records without treating them as unread", function()

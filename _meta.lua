@@ -12,5 +12,5 @@ return {
     name = "suwayomi",
     fullname = I18n.t("Suwayomi Client v1.4.0"),
     description = I18n.t([[Suwayomi client for KOReader. Browse your Suwayomi server, manage source extensions, sync read state, and download chapters as local CBZ files.]]),
-    version = "1.4.0",
+    version = "1.5.0",
 }

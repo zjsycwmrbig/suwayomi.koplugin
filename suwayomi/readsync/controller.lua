@@ -340,7 +340,12 @@ function Methods:onCloseDocument()
             local finished_entry = saved[tostring(entry.manga_id) .. ":" .. tostring(entry.chapter_id)] or entry
             self:markCurrentContextChapterReadFromLedger(finished_entry)
             self:schedulePendingReadSync()
-            local settings = SuwayomiSettings:loadDeleteChaptersSettings()
+            local settings = SuwayomiSettings.resolveDeleteChaptersSettings
+                and SuwayomiSettings:resolveDeleteChaptersSettings({
+                    id = entry.manga_id,
+                    title = entry.manga_title,
+                })
+                or SuwayomiSettings:loadDeleteChaptersSettings()
             local cleanup_enabled = tonumber(settings and settings.delete_finished_while_reading) or 0
             if cleanup_enabled > 0
                 and type(finished_entry.path) == "string" and finished_entry.path ~= ""

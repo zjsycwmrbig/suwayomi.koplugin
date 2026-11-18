@@ -7,7 +7,7 @@
 
 local SourceCatalog = {}
 local Methods = {}
-local DEFAULT_SOURCE_LANGUAGE = "en"
+local DEFAULT_SOURCE_LANGUAGE = "zh"
 local LOCAL_SOURCE_LANGUAGE = "localsourcelang"
 local SourceLanguages = require("suwayomi/source_languages")
 
@@ -80,14 +80,52 @@ local function copyDefaultSourceLanguageFilter()
     }
 end
 
+local function saveLanguageFilter(selected)
+    local languages = {}
+    for lang, enabled in pairs(selected or {}) do
+        if enabled and normalizeLanguage(lang) then
+            languages[#languages + 1] = lang
+        end
+    end
+    table.sort(languages)
+    local Settings = getSettings()
+    if not Settings.saveSourceLanguages then
+        return selected, languages
+    end
+    local saved, err = Settings:saveSourceLanguages(languages)
+    if not saved then
+        return nil, err
+    end
+    local normalized = {}
+    for _, lang in ipairs(saved) do
+        local code = normalizeLanguage(lang)
+        if code then normalized[code] = true end
+    end
+    return normalized, saved
+end
+
 function Methods:getSourceLanguageFilterSet()
     if type(self.current_source_language_filters) == "table" then
         return self.current_source_language_filters
     end
 
-    local selected = copyDefaultSourceLanguageFilter()
+    local Settings = getSettings()
+    local selected
+    local loaded = false
+    if Settings.loadSourceLanguages then
+        local saved = Settings:loadSourceLanguages()
+        if type(saved) == "table" then
+            loaded = true
+            selected = {}
+            for _, lang in ipairs(saved) do
+                local code = normalizeLanguage(lang)
+                if code then selected[code] = true end
+            end
+        end
+    end
+    selected = selected or copyDefaultSourceLanguageFilter()
     local legacy_filter = normalizeLanguage(self.current_source_language_filter)
-    if legacy_filter then
+    if not loaded and legacy_filter then
         selected = {
             [legacy_filter] = true,
         }
@@ -192,9 +230,14 @@ end
 
 function Methods:setSourceLanguageFilter(language)
     local lang = normalizeLanguage(language) or DEFAULT_SOURCE_LANGUAGE
-    self.current_source_language_filters = {
+    local selected, err = saveLanguageFilter({
         [lang] = true,
-    }
+    })
+    if not selected then
+        if self.showMessage then self:showMessage(err or tr("Failed to save settings.")) end
+        return false
+    end
+    self.current_source_language_filters = selected
     self:refreshSourceLanguageFilter()
     return true
 end
@@ -206,7 +249,17 @@ function Methods:toggleSourceLanguageFilter(language, enabled)
         return false
     end
     local selected_languages = self:getSourceLanguageFilterSet()
-    selected_languages[lang] = enabled == true or nil
+    local updated = {}
+    for code, selected in pairs(selected_languages) do
+        if selected then updated[code] = true end
+    end
+    updated[lang] = enabled == true or nil
+    local saved_languages, save_error = saveLanguageFilter(updated)
+    if not saved_languages then
+        if self.showMessage then self:showMessage(save_error or tr("Failed to save settings.")) end
+        return false
+    end
+    self.current_source_language_filters = saved_languages
     self:refreshSourceLanguageFilter()
     return true
 end

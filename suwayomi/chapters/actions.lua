@@ -785,7 +785,7 @@ function Methods:performBulkChapterAction(action_id, menu_context)
     local manga = context and context.manga
     if manga and action_id ~= "select_all" and action_id ~= "select_chapters" and action_id ~= "select_range"
         and action_id ~= "clear_selection" and action_id ~= "scanlator_filter"
-        and action_id ~= "download_filter" and action_id ~= "toggle_manga_pause"
+        and action_id ~= "toggle_manga_pause"
         and action_id ~= "download_all_missing" then
         local recovered_refresh = action_id == "refresh_chapters" and not manga.local_only and manga.id
             and ((context.missing and not manga.endpoint_scope)
@@ -821,8 +821,8 @@ function Methods:performBulkChapterAction(action_id, menu_context)
         self:showScanlatorFilterActions(menu_context)
         return true
     end
-    if action_id == "download_filter" then
-        self:showDownloadManagerFilterActions(menu_context)
+    if action_id == "delete_policy" then
+        self:showMangaDeletePolicy(menu_context)
         return true
     end
     if action_id == "download_all_missing" then

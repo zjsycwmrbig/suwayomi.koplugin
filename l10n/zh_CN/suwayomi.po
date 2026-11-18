@@ -26,9 +26,6 @@ msgstr "（第 %1 章）"
 msgid " (Suwayomi id %1)"
 msgstr "（Suwayomi ID %1）"
 
-msgid "%1 (%2)"
-msgstr "%1（%2）"
-
 msgctxt "source filter sort summary"
 msgid "%1 - Ascending"
 msgstr "%1 - 升序"
@@ -170,13 +167,14 @@ msgid "Any"
 msgstr "任意"
 
 msgid ""
-"Applies when you manually mark chapters read in the plugin. Removes the "
-"downloaded file but keeps reading data. If a chapter is still downloading, "
-"request deletion again after it finishes. Turning this off does not cancel "
-"deletion requests already accepted."
+"Applies to manga without a per-manga override. When a chapter is manually "
+"marked read, removes its downloaded file but keeps reading data. If a "
+"chapter is still downloading, request deletion again after it finishes. "
+"Turning this off does not cancel deletion requests already accepted."
 msgstr ""
-"在插件中手动将章节标为已读时生效。删除下载文件，但保留阅读数据。如果章节仍在"
-"下载，请在下载完成后再次请求删除。关闭此设置不会取消已接受的删除请求。"
+"适用于没有单独设置删除策略的漫画。在插件中手动将章节标为已读时删除下载文件，"
+"但保留阅读数据。如果章节仍在下载，请在下载完成后再次请求删除。关闭此设置不会"
+"取消已接受的删除请求。"
 
 msgid "Apply filters"
 msgstr "应用筛选"
@@ -216,6 +214,12 @@ msgstr "身份验证：%1"
 
 msgid "Author"
 msgstr "作者"
+
+msgid "Auto-delete finished chapters"
+msgstr "自动删除已读完章节"
+
+msgid "Auto-delete finished: %1"
+msgstr "自动删除已读完：%1"
 
 msgid "Auto-download"
 msgstr "自动下载"
@@ -573,6 +577,10 @@ msgstr "无法刷新书库，且没有可用的已保存信息。"
 msgid "Could not refresh Library. Showing retained information."
 msgstr "无法刷新书库，正在显示保留的信息。"
 
+msgid "Could not remove %1 local download."
+msgid_plural "Could not remove %1 local downloads."
+msgstr[0] "无法删除 %1 个本地下载。"
+
 msgid "Could not replace settings."
 msgstr "无法替换设置文件。"
 
@@ -652,6 +660,23 @@ msgstr "当前"
 msgid "Current active chapter finishes; queued chapters wait."
 msgstr "当前正在下载的章节会完成，排队章节将暂停。"
 
+msgid "Default delete after reading: %1"
+msgstr "默认读完后删除：%1"
+
+msgid "Default delete when marked read: %1"
+msgstr "默认标记已读后删除：%1"
+
+msgid ""
+"Default for manga without a per-manga override. Keeps the chapters finished "
+"most recently in each manga, not the highest chapter numbers. A chapter "
+"counts after you or KOReader mark it finished and you close it, or you "
+"manually mark it read in the plugin. Open chapters are not deleted. Off "
+"disables only this setting."
+msgstr ""
+"适用于没有单独设置删除策略的漫画。按每部漫画保留最近读完的章节，而不是章节号"
+"最大的章节。你或 KOReader 将章节标记为已读并关闭它，或在插件中手动标记已读"
+"后，该章节才会被计入。正在阅读的章节不会被删除。关闭仅停用此设置。"
+
 msgid "Delete"
 msgstr "删除"
 
@@ -682,9 +707,6 @@ msgstr[0] "从设备删除 %1 个选中的下载？"
 msgid "Delete after reading"
 msgstr "读完后删除"
 
-msgid "Delete after reading: %1"
-msgstr "读完后删除：%1"
-
 msgid "Delete all local downloads"
 msgstr "删除全部本地下载"
 
@@ -693,6 +715,9 @@ msgstr "清理全部已读下载"
 
 msgid "Delete chapter settings are unavailable."
 msgstr "章节删除设置不可用。"
+
+msgid "Delete download"
+msgstr "删除下载"
 
 msgid "Delete downloaded chapters (%1)"
 msgstr "删除已下载章节（%1）"
@@ -712,23 +737,24 @@ msgstr "删除文件"
 msgid "Delete from device"
 msgstr "从设备删除"
 
+msgid "Delete read downloads (%1)"
+msgstr "删除已读下载（%1）"
+
 msgid "Delete saved filter"
 msgstr "删除已保存的筛选器"
 
 msgid "Delete saved filter \"%1\"?"
 msgstr "要删除已保存的筛选器“%1”吗？"
 
-msgid "Delete selected downloads"
-msgstr "删除选中的下载"
-
 msgid "Delete selected local downloads"
 msgstr "删除选中的本地下载"
 
-msgid "Delete when marked read: %1"
-msgstr "标为已读后删除：%1"
-
 msgid "Deleted %1 downloads; %2 could not be deleted."
 msgstr "已删除 %1 个下载；%2 个无法删除。"
+
+msgid "Deleted %1 local chapter download."
+msgid_plural "Deleted %1 local chapter downloads."
+msgstr[0] "已删除 %1 个本地章节下载。"
 
 msgid "Deleted %1 local downloads; %2 skipped or failed."
 msgstr "已删除 %1 个本地下载；%2 个跳过或失败。"
@@ -760,9 +786,6 @@ msgid ""
 "Download belongs to a different server. Restore the original server in "
 "Connection settings, then Retry."
 msgstr "此下载属于其他服务器。请在连接设置中恢复原服务器后重试。"
-
-msgid "Download chapter filter"
-msgstr "下载章节筛选"
 
 msgid "Download damaged; redownload"
 msgstr "下载文件已损坏；请重新下载"
@@ -797,15 +820,6 @@ msgstr "下载已不再处于失败状态。"
 msgid "Download is no longer queued."
 msgstr "下载不再排队中。"
 
-msgid "Download management"
-msgstr "下载管理"
-
-msgid "Download management: %1"
-msgstr "下载管理：%1"
-
-msgid "Download missing chapters (%1)"
-msgstr "下载未下载章节（%1）"
-
 msgid "Download next %1 (up to 50 new)"
 msgstr "下载接下来 %1 章（最多新增 50 章）"
 
@@ -833,6 +847,9 @@ msgstr ""
 msgid "Download next and auto-download"
 msgstr "“下载接下来”与自动下载"
 
+msgid "Download options"
+msgstr "下载选项"
+
 msgid "Download selected"
 msgstr "下载选中的"
 
@@ -848,8 +865,8 @@ msgstr ""
 msgid "Download the chapter first."
 msgstr "请先下载此章节。"
 
-msgid "Download this chapter from Suwayomi Download management first."
-msgstr "请先在 Suwayomi 下载管理中下载此章节。"
+msgid "Download this chapter from the manga chapter list first."
+msgstr "请先在漫画章节目录中下载此章节。"
 
 msgid "Download undownloaded chapters"
 msgstr "下载未下载章节"
@@ -968,9 +985,6 @@ msgstr "筛选"
 msgid "Filter name"
 msgstr "筛选器名称"
 
-msgid "Filter: %1"
-msgstr "筛选：%1"
-
 msgid "Finishing and deletion"
 msgstr "读完与删除"
 
@@ -985,6 +999,9 @@ msgstr "前 50 个未读章节"
 
 msgid "First unread"
 msgstr "第一个未读章节"
+
+msgid "Follow global (%1)"
+msgstr "跟随全局（%1）"
 
 msgid "Genres"
 msgstr "题材"
@@ -1038,21 +1055,14 @@ msgstr[0] "保留 %1 章"
 msgid "Keep disabled"
 msgstr "保持禁用"
 
+msgid "Keep download"
+msgstr "保留下载"
+
 msgid "Keep downloading"
 msgstr "继续下载"
 
 msgid "Keep none"
 msgstr "不保留"
-
-msgid ""
-"Keeps the chapters finished most recently in each manga, not the highest "
-"chapter numbers. A chapter counts after you or KOReader mark it finished and "
-"you close it, or you manually mark it read in the plugin. Open chapters are "
-"not deleted. Off disables only this setting."
-msgstr ""
-"保留每部漫画中最近读完的章节，而不是编号最大的章节。您或 KOReader 将章节标记"
-"为读完并关闭章节，或您在插件中手动将章节标为已读后，该章节才会计入。已打开的"
-"章节不会被删除。“关闭”只停用此设置。"
 
 msgctxt "source mode"
 msgid "Latest"
@@ -1199,9 +1209,6 @@ msgstr ""
 "据和备份。将章节标为未读会取消待执行的删除。新的“下载”或“重试”操作在请求被接"
 "受后也会取消删除；失败的请求和自动下载不会取消删除。"
 
-msgid "More download options"
-msgstr "更多下载选项"
-
 msgid "Never ask"
 msgstr "从不询问"
 
@@ -1344,6 +1351,9 @@ msgctxt "source filter state"
 msgid "Off"
 msgstr "关"
 
+msgid "On"
+msgstr "开"
+
 msgctxt "source filter state"
 msgid "On"
 msgstr "开"
@@ -1405,6 +1415,9 @@ msgstr "已暂停此漫画的排队下载。"
 
 msgid "Pending read changes are not associated with the configured server."
 msgstr "待同步的阅读状态未关联到当前配置的服务器。"
+
+msgid "Per-manga delete policy"
+msgstr "每部漫画删除策略"
 
 msgctxt "source mode"
 msgid "Popular"
@@ -1603,9 +1616,6 @@ msgstr "搜索：%1"
 
 msgid "Select all"
 msgstr "全选"
-
-msgid "Select all shown (%1)"
-msgstr "全选当前显示（%1）"
 
 msgid "Select chapters"
 msgstr "选择章节"
@@ -1860,6 +1870,10 @@ msgstr "此源没有筛选器。"
 msgid "This source has no manga."
 msgstr "此源没有漫画。"
 
+msgid "This will also delete %1 downloaded chapter from this device."
+msgid_plural "This will also delete %1 downloaded chapters from this device."
+msgstr[0] "同时会从此设备删除 %1 个已下载章节。"
+
 msgid "Timed out."
 msgstr "已超时。"
 
@@ -1956,6 +1970,12 @@ msgstr "等待检查哪些未读章节需要下载。"
 
 msgid "When auto-download runs"
 msgstr "自动下载的运行时机"
+
+msgid "When marked read"
+msgstr "标记为已读时"
+
+msgid "When marked read: %1"
+msgstr "标记为已读时：%1"
 
 msgid ""
 "With Keep 2, finishing A, then B, then C in one manga makes A eligible for "

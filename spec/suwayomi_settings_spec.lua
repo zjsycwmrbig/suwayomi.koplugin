@@ -325,11 +325,11 @@ describe("suwayomi/settings", function()
         assert.are.same(journal, saved)
     end)
 
-    it("loads source languages with english enabled by default", function()
+    it("loads source languages with Chinese enabled by default", function()
         local settings = require("suwayomi/settings")
         local source_languages = settings:loadSourceLanguages()
 
-        assert.are.same({ "en" }, source_languages)
+        assert.are.same({ "zh" }, source_languages)
     end)
 
     it("saves source languages and flushes the settings file", function()
@@ -708,6 +708,56 @@ describe("suwayomi/settings", function()
             delete_after_mark_read = false,
             delete_finished_while_reading = 0,
         }, settings:loadDeleteChaptersSettings())
+    end)
+
+    it("resolves per-manga delete policies over global defaults", function()
+        local settings = require("suwayomi/settings")
+        local manga = { id = "m1", title = "Frieren" }
+        settings:saveDeleteChaptersSettings({
+            delete_after_mark_read = false,
+            delete_finished_while_reading = 2,
+        })
+
+        local effective, policy = settings:resolveDeleteChaptersSettings(manga)
+        assert.is_nil(policy)
+        assert.is_false(effective.delete_after_mark_read)
+        assert.are.equal(2, effective.delete_finished_while_reading)
+
+        assert.are.same({
+            delete_after_mark_read = true,
+            delete_finished_while_reading = 5,
+        }, settings:saveMangaDeletePolicy(manga, {
+            delete_after_mark_read = true,
+            delete_finished_while_reading = 5,
+        }))
+        effective, policy = settings:resolveDeleteChaptersSettings(manga)
+        assert.is_true(policy.delete_after_mark_read)
+        assert.is_true(effective.delete_after_mark_read)
+        assert.are.equal(5, effective.delete_finished_while_reading)
+        assert.are.equal(5, stored_data.manga_delete_policies.m1.delete_finished_while_reading)
+
+        settings:saveMangaDeletePolicy(manga, { delete_after_mark_read = false })
+        effective = settings:resolveDeleteChaptersSettings(manga)
+        assert.is_false(effective.delete_after_mark_read)
+        assert.are.equal(2, effective.delete_finished_while_reading)
+
+        assert.is_nil(settings:saveMangaDeletePolicy(manga, nil))
+        assert.is_nil(stored_data.manga_delete_policies.m1)
+        effective = settings:resolveDeleteChaptersSettings(manga)
+        assert.is_false(effective.delete_after_mark_read)
+        assert.are.equal(2, effective.delete_finished_while_reading)
+    end)
+
+    it("ignores invalid per-manga delete policies", function()
+        local settings = require("suwayomi/settings")
+        stored_data.manga_delete_policies = {
+            m1 = {
+                delete_after_mark_read = "yes",
+                delete_finished_while_reading = 99,
+            },
+        }
+
+        assert.is_nil(settings:loadMangaDeletePolicy({ id = "m1" }))
     end)
 
     it("loads and saves per-manga keep-next unread download limits", function()

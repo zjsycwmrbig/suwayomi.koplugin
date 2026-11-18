@@ -417,7 +417,7 @@ function Methods:showReaderChapterList()
             chapter = chapter,
             callback = function()
                 if not downloaded then
-                    self:showMessage(I18n.t("Download this chapter from Suwayomi Download management first."))
+                    self:showMessage(I18n.t("Download this chapter from the manga chapter list first."))
                     return
                 end
                 if menu then UIManager:close(menu) end

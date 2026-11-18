@@ -27,9 +27,6 @@ msgstr " (гл. %1)"
 msgid " (Suwayomi id %1)"
 msgstr " (ID Suwayomi %1)"
 
-msgid "%1 (%2)"
-msgstr ""
-
 msgctxt "source filter sort summary"
 msgid "%1 - Ascending"
 msgstr "%1 - по возрастанию"
@@ -207,11 +204,12 @@ msgctxt "source filter tri-state"
 msgid "Any"
 msgstr "Любые"
 
+#, fuzzy
 msgid ""
-"Applies when you manually mark chapters read in the plugin. Removes the "
-"downloaded file but keeps reading data. If a chapter is still downloading, "
-"request deletion again after it finishes. Turning this off does not cancel "
-"deletion requests already accepted."
+"Applies to manga without a per-manga override. When a chapter is manually "
+"marked read, removes its downloaded file but keeps reading data. If a "
+"chapter is still downloading, request deletion again after it finishes. "
+"Turning this off does not cancel deletion requests already accepted."
 msgstr ""
 "Действует, когда вы вручную отмечаете главы прочитанными в плагине. Удаляет "
 "скачанный файл, но сохраняет данные чтения. Если глава ещё скачивается, "
@@ -258,6 +256,13 @@ msgstr "Аутентификация: %1"
 
 msgid "Author"
 msgstr "Автор"
+
+#, fuzzy
+msgid "Auto-delete finished chapters"
+msgstr "Скачанные главы находятся в %1."
+
+msgid "Auto-delete finished: %1"
+msgstr ""
 
 msgid "Auto-download"
 msgstr "Автозагрузка"
@@ -667,6 +672,13 @@ msgid "Could not refresh Library. Showing retained information."
 msgstr ""
 
 #, fuzzy
+msgid "Could not remove %1 local download."
+msgid_plural "Could not remove %1 local downloads."
+msgstr[0] "Не удалось подтвердить %1 загрузку главы."
+msgstr[1] "Не удалось подтвердить %1 загрузки глав."
+msgstr[2] "Не удалось подтвердить %1 загрузок глав."
+
+#, fuzzy
 msgid "Could not replace settings."
 msgstr "Не удалось сохранить настройки."
 
@@ -751,6 +763,27 @@ msgstr ""
 msgid "Current active chapter finishes; queued chapters wait."
 msgstr ""
 
+#, fuzzy
+msgid "Default delete after reading: %1"
+msgstr "Удалять после прочтения: %1"
+
+#, fuzzy
+msgid "Default delete when marked read: %1"
+msgstr "Удалять после отметки «Прочитано»: %1"
+
+#, fuzzy
+msgid ""
+"Default for manga without a per-manga override. Keeps the chapters finished "
+"most recently in each manga, not the highest chapter numbers. A chapter "
+"counts after you or KOReader mark it finished and you close it, or you "
+"manually mark it read in the plugin. Open chapters are not deleted. Off "
+"disables only this setting."
+msgstr ""
+"Хранит главы, завершённые последними в каждой манге, а не главы с "
+"наибольшими номерами. Глава учитывается, если вы или KOReader отметили её "
+"завершённой и вы закрыли её или вручную отметили её прочитанной в плагине. "
+"Открытые главы не удаляются. «Выкл.» отключает только эту настройку."
+
 msgid "Delete"
 msgstr "Удалить"
 
@@ -786,9 +819,6 @@ msgstr[2] "Удалить %1 выбранных загрузок с устрой
 msgid "Delete after reading"
 msgstr "Удалять после прочтения"
 
-msgid "Delete after reading: %1"
-msgstr "Удалять после прочтения: %1"
-
 #, fuzzy
 msgid "Delete all local downloads"
 msgstr "Удалить файлы прочитанных глав"
@@ -799,6 +829,10 @@ msgstr "Удалить файлы прочитанных глав"
 
 msgid "Delete chapter settings are unavailable."
 msgstr "Настройки удаления глав недоступны."
+
+#, fuzzy
+msgid "Delete download"
+msgstr "Удалить загрузки"
 
 #, fuzzy
 msgid "Delete downloaded chapters (%1)"
@@ -821,6 +855,10 @@ msgstr "Удалить сохранённый фильтр"
 msgid "Delete from device"
 msgstr "Удалить с устройства"
 
+#, fuzzy
+msgid "Delete read downloads (%1)"
+msgstr "Удалить загрузки"
+
 msgid "Delete saved filter"
 msgstr "Удалить сохранённый фильтр"
 
@@ -828,18 +866,18 @@ msgid "Delete saved filter \"%1\"?"
 msgstr "Удалить сохранённый фильтр \"%1\"?"
 
 #, fuzzy
-msgid "Delete selected downloads"
-msgstr "Удалить файлы прочитанных глав"
-
-#, fuzzy
 msgid "Delete selected local downloads"
 msgstr "Удалить файлы прочитанных глав"
 
-msgid "Delete when marked read: %1"
-msgstr "Удалять после отметки «Прочитано»: %1"
-
 msgid "Deleted %1 downloads; %2 could not be deleted."
 msgstr ""
+
+#, fuzzy
+msgid "Deleted %1 local chapter download."
+msgid_plural "Deleted %1 local chapter downloads."
+msgstr[0] "В очередь добавлена %1 выбранная глава."
+msgstr[1] "В очередь добавлены %1 выбранные главы."
+msgstr[2] "В очередь добавлено %1 выбранных глав."
 
 msgid "Deleted %1 local downloads; %2 skipped or failed."
 msgstr ""
@@ -871,10 +909,6 @@ msgid ""
 "Download belongs to a different server. Restore the original server in "
 "Connection settings, then Retry."
 msgstr ""
-
-#, fuzzy
-msgid "Download chapter filter"
-msgstr "Сначала скачайте главу."
 
 msgid "Download damaged; redownload"
 msgstr "Загрузка повреждена; скачайте заново"
@@ -909,18 +943,6 @@ msgstr "Загрузка больше не находится в состоян�
 msgid "Download is no longer queued."
 msgstr "Загрузка больше не в очереди."
 
-#, fuzzy
-msgid "Download management"
-msgstr "Скачать следующие 5"
-
-#, fuzzy
-msgid "Download management: %1"
-msgstr "Скачать следующие 10"
-
-#, fuzzy
-msgid "Download missing chapters (%1)"
-msgstr "Скачанные главы находятся в %1."
-
 msgid "Download next %1 (up to 50 new)"
 msgstr "Скачать следующие %1 (до 50 новых)"
 
@@ -950,6 +972,10 @@ msgstr ""
 msgid "Download next and auto-download"
 msgstr "Скачивание следующих глав и автозагрузка"
 
+#, fuzzy
+msgid "Download options"
+msgstr "Не отменять загрузки"
+
 msgid "Download selected"
 msgstr "Скачать выбранное"
 
@@ -964,8 +990,9 @@ msgstr ""
 msgid "Download the chapter first."
 msgstr "Сначала скачайте главу."
 
-msgid "Download this chapter from Suwayomi Download management first."
-msgstr ""
+#, fuzzy
+msgid "Download this chapter from the manga chapter list first."
+msgstr "Сначала скачайте главу."
 
 #, fuzzy
 msgid "Download undownloaded chapters"
@@ -1089,10 +1116,6 @@ msgstr "Фильтр"
 msgid "Filter name"
 msgstr "Название фильтра"
 
-#, fuzzy
-msgid "Filter: %1"
-msgstr "Фильтр"
-
 msgid "Finishing and deletion"
 msgstr "Завершение чтения и удаление"
 
@@ -1107,6 +1130,9 @@ msgstr "Первые 50 непрочитанных глав"
 
 msgid "First unread"
 msgstr "Первая непрочитанная"
+
+msgid "Follow global (%1)"
+msgstr ""
 
 msgid "Genres"
 msgstr "Жанры"
@@ -1165,22 +1191,15 @@ msgstr[2] "Хранить %1 глав"
 msgid "Keep disabled"
 msgstr "Не включать"
 
+#, fuzzy
+msgid "Keep download"
+msgstr "Не отменять загрузки"
+
 msgid "Keep downloading"
 msgstr "Не отменять загрузки"
 
 msgid "Keep none"
 msgstr "Не хранить"
-
-msgid ""
-"Keeps the chapters finished most recently in each manga, not the highest "
-"chapter numbers. A chapter counts after you or KOReader mark it finished and "
-"you close it, or you manually mark it read in the plugin. Open chapters are "
-"not deleted. Off disables only this setting."
-msgstr ""
-"Хранит главы, завершённые последними в каждой манге, а не главы с "
-"наибольшими номерами. Глава учитывается, если вы или KOReader отметили её "
-"завершённой и вы закрыли её или вручную отметили её прочитанной в плагине. "
-"Открытые главы не удаляются. «Выкл.» отключает только эту настройку."
 
 msgctxt "source mode"
 msgid "Latest"
@@ -1318,10 +1337,6 @@ msgstr ""
 "резервные копии. Отметка главы непрочитанной отменяет ожидающее удаление. "
 "Новый запрос «Скачать» или «Повторить» тоже отменяет его, если запрос "
 "принят; неудачные запросы и автозагрузка этого не делают."
-
-#, fuzzy
-msgid "More download options"
-msgstr "Не отменять загрузки"
 
 msgid "Never ask"
 msgstr "Никогда не спрашивать"
@@ -1484,6 +1499,10 @@ msgctxt "source filter state"
 msgid "Off"
 msgstr "Выкл."
 
+#, fuzzy
+msgid "On"
+msgstr "Вкл."
+
 msgctxt "source filter state"
 msgid "On"
 msgstr "Вкл."
@@ -1550,6 +1569,9 @@ msgid "Paused queued downloads for this manga."
 msgstr "Отменить все загрузки"
 
 msgid "Pending read changes are not associated with the configured server."
+msgstr ""
+
+msgid "Per-manga delete policy"
 msgstr ""
 
 msgctxt "source mode"
@@ -1771,10 +1793,6 @@ msgid "Search: %1"
 msgstr "Поиск: %1"
 
 msgid "Select all"
-msgstr "Выбрать всё"
-
-#, fuzzy
-msgid "Select all shown (%1)"
 msgstr "Выбрать всё"
 
 #, fuzzy
@@ -2048,6 +2066,13 @@ msgstr "У этого источника нет фильтров."
 msgid "This source has no manga."
 msgstr "У этого источника нет манги."
 
+#, fuzzy
+msgid "This will also delete %1 downloaded chapter from this device."
+msgid_plural "This will also delete %1 downloaded chapters from this device."
+msgstr[0] "Скачанные главы находятся в %1."
+msgstr[1] "Скачанные главы находятся в %1."
+msgstr[2] "Скачанные главы находятся в %1."
+
 msgid "Timed out."
 msgstr "Время ожидания истекло."
 
@@ -2145,6 +2170,14 @@ msgstr "Ожидание проверки непрочитанных глав д
 
 msgid "When auto-download runs"
 msgstr "Когда работает автозагрузка"
+
+#, fuzzy
+msgid "When marked read"
+msgstr "Удалять после отметки «Прочитано»: %1"
+
+#, fuzzy
+msgid "When marked read: %1"
+msgstr "Удалять после отметки «Прочитано»: %1"
 
 msgid ""
 "With Keep 2, finishing A, then B, then C in one manga makes A eligible for "

@@ -10,6 +10,7 @@ local SuwayomiUI = require("suwayomi/ui")
 local SuwayomiDebug = require("suwayomi/debug")
 local I18n = require("suwayomi/i18n")
 local MangaActionMenu = require("suwayomi/manga/action_menu")
+local RetentionLabels = require("suwayomi/settings/retention_labels")
 
 local ChapterMenu = {}
 ChapterMenu.__index = ChapterMenu
@@ -64,73 +65,6 @@ function ChapterMenu:new(deps)
 end
 
 local Methods = {}
-local DOWNLOAD_FILTERS = {
-    all = "All chapters",
-    undownloaded = "Undownloaded",
-    downloaded = "Downloaded",
-    failed = "Failed",
-    active = "Downloading or queued",
-}
-
-function Methods:getDownloadManagerFilter()
-    local filter = self.download_manager_filter
-    return DOWNLOAD_FILTERS[filter] and filter or nil
-end
-
-function Methods:formatDownloadManagerFilterLabel(filter)
-    return I18n.t(DOWNLOAD_FILTERS[filter or self:getDownloadManagerFilter() or "all"])
-end
-
-local function getPreparedDownloadState(display)
-    local status = display and display.status or {}
-    local state = status.state
-    return {
-        state = state,
-        downloaded = state == "downloaded" or state == "skipped",
-        active = state == "queued" or state == "downloading" or state == "running"
-            or state == "stopping" or state == "finalizing",
-        failed = state == "failed",
-    }
-end
-
-local function filterPreparedChapters(prepared, filter)
-    if not filter or filter == "all" then return prepared end
-    local filtered = {}
-    for _, display in ipairs(prepared or {}) do
-        local state = getPreparedDownloadState(display)
-        local include = filter == "downloaded" and state.downloaded
-            or filter == "failed" and state.failed
-            or filter == "active" and state.active
-            or filter == "undownloaded" and not state.downloaded and not state.active and not state.failed
-        if include then filtered[#filtered + 1] = display end
-    end
-    return filtered
-end
-
-local function buildDownloadManagerView(prepared, filter)
-    local filtered = filterPreparedChapters(prepared, filter)
-    local counts = { all = #(prepared or {}), undownloaded = 0, downloaded = 0, failed = 0, active = 0 }
-    local chapters = {}
-    for _index, display in ipairs(prepared or {}) do
-        local state = getPreparedDownloadState(display)
-        if state.downloaded then counts.downloaded = counts.downloaded + 1
-        elseif state.active then counts.active = counts.active + 1
-        elseif state.failed then counts.failed = counts.failed + 1
-        else counts.undownloaded = counts.undownloaded + 1 end
-    end
-    for _index, display in ipairs(filtered or {}) do
-        chapters[#chapters + 1] = display.chapter
-    end
-    return filtered, counts, chapters
-end
-
-function Methods:formatDownloadManagementTitle(manga)
-    if not self:getDownloadManagerFilter() then return nil end
-    local base = self.formatChapterListScreenTitle and self.formatChapterListScreenTitle(manga)
-        or self.formatChapterListTitle and self.formatChapterListTitle(manga)
-        or I18n.t("Chapters")
-    return I18n.f("Download management: %1", base)
-end
 
 local function reportExpiredChapterAction(owner)
     if owner.suwayomi_host_retired then return false end
@@ -182,10 +116,7 @@ function Methods:getChapterTitleBarMenuOptions(manga, lookup)
     end
     local context = self.current_chapter_context
     local manga_id = manga and tostring(manga.id or manga.title)
-    local title = self:formatDownloadManagementTitle(manga) or self:formatChapterListTitle(manga)
-    if self:getDownloadManagerFilter() then
-        title = title .. " · " .. self:formatDownloadManagerFilterLabel()
-    end
+    local title = self:formatChapterListTitle(manga)
     return self:getTitleBarMenuOptions({
         title = title,
         actions = self:getBulkChapterActions(lookup),
@@ -362,14 +293,7 @@ function Methods:buildChapterMenuOptions(manga, chapters, ledger, options)
     local lookup = self.buildChapterDownloadLookup and self:buildChapterDownloadLookup(manga, read_ledger)
     local prepared, err = self:prepareChapterMenuItems(manga, visible_chapters, ledger, options, lookup, read_ledger)
     if not prepared then return nil, err end
-    local filter = options and options.download_manager_filter or self:getDownloadManagerFilter()
     local title = self.formatChapterListScreenTitle and self.formatChapterListScreenTitle(manga) or I18n.t("Chapters")
-    if filter then
-        prepared, self.download_manager_counts, self.download_manager_chapters = buildDownloadManagerView(prepared, filter)
-        title = self:formatDownloadManagementTitle(manga) .. " · " .. self:formatDownloadManagerFilterLabel(filter)
-    else
-        self.download_manager_counts, self.download_manager_chapters = nil, nil
-    end
 
     local menu_options = copyTitleBarOptions({
         title = self.formatChapterListScreenTitle and self:formatChapterListScreenTitle(manga) or I18n.t("Chapters"),
@@ -513,7 +437,9 @@ function Methods:getChapterActions(manga, chapter)
         table.insert(actions, { id = "mark_unread", text = I18n.t("Mark as unread") })
         -- A busy rejection or an unproved old target needs a fresh explicit action,
         -- not a deletion Retry control or an unread/read round trip.
-        local settings = SuwayomiSettings:loadDeleteChaptersSettings()
+        local settings = SuwayomiSettings.resolveDeleteChaptersSettings
+            and SuwayomiSettings:resolveDeleteChaptersSettings(manga)
+            or SuwayomiSettings:loadDeleteChaptersSettings()
         if settings.delete_after_mark_read == true and downloaded then
             table.insert(actions, { id = "mark_read", text = I18n.t("Mark as read") })
         end
@@ -527,69 +453,37 @@ function Methods:getChapterActions(manga, chapter)
     return actions
 end
 
-function Methods:getDownloadManagerActions()
+function Methods:getDirectoryDownloadActions()
     local actions = {}
     local context = self.current_chapter_context
     local manga = context and context.manga
-    local counts = self.download_manager_counts or {}
-    local function filterText(filter)
-        local label = self:formatDownloadManagerFilterLabel(filter)
-        local count = tonumber(counts[filter])
-        return count and I18n.f("%1 (%2)", label, count) or label
-    end
-    table.insert(actions, {
-        id = "download_filter",
-        text = I18n.f("Filter: %1", filterText(self:getDownloadManagerFilter() or "all")),
-        submenu = true,
-    })
-
-    local selected_count = self:getSelectedChapterCount()
-    if selected_count > 0 then
+    local downloaded = self.getDownloadedChaptersFromCurrentContext
+        and #(self:getDownloadedChaptersFromCurrentContext() or {}) or 0
+    local read_downloaded = self.getReadDownloadedChaptersFromCurrentContext
+        and #(self:getReadDownloadedChaptersFromCurrentContext() or {}) or 0
+    table.insert(actions, { id = "keep_downloaded", text = I18n.t("Auto-download"), submenu = true })
+    table.insert(actions, { id = "bulk_downloads", text = I18n.t("Download options"), submenu = true })
+    table.insert(actions, { id = "delete_policy", text = I18n.t("Per-manga delete policy"), submenu = true })
+    if read_downloaded > 0 then
         table.insert(actions, {
-            id = "download_selected",
-            text = selected_count > (self.max_batch_queue_chapters or 50)
-                and I18n.t("Download selected (up to 50 new)")
-                or I18n.t("Download selected"),
-        })
-        table.insert(actions, { id = "mark_read_selected", text = I18n.t("Mark read") })
-        table.insert(actions, { id = "mark_unread_selected", text = I18n.t("Mark unread") })
-        table.insert(actions, { id = "clear_selection", text = I18n.t("Clear selection") })
-        table.insert(actions, { id = "select_range", text = I18n.t("Add chapter range") })
-        if hasCancelableDownloads(self, manga) then
-            table.insert(actions, {
-                id = "cancel_manga_downloads", text = I18n.t("Cancel all tasks for this manga"), destructive = true,
-            })
-        end
-        table.insert(actions, { id = "delete_selected", text = I18n.t("Delete selected downloads"), destructive = true })
-        return actions
-    end
-
-    if context and #(context.chapters or {}) > 0 then
-        table.insert(actions, {
-            id = "select_all",
-            text = I18n.f("Select all shown (%1)", #(self.download_manager_chapters or {})),
-        })
-        table.insert(actions, { id = "select_chapters", text = I18n.t("Select chapters") })
-        table.insert(actions, { id = "select_range", text = I18n.t("Add chapter range") })
-    end
-    if counts.undownloaded and counts.undownloaded > 0 then
-        table.insert(actions, {
-            id = "download_all_missing",
-            text = I18n.f("Download missing chapters (%1)", counts.undownloaded),
+            id = "delete_read_downloaded",
+            text = I18n.f("Delete read downloads (%1)", read_downloaded),
+            destructive = true,
         })
     end
-
-    local queue = self.getDownloadQueue and self:getDownloadQueue()
-    local paused = queue and queue.isMangaPaused and queue:isMangaPaused(manga)
-    table.insert(actions, {
-        id = "toggle_manga_pause",
-        text = paused and I18n.t("Resume downloads for this manga") or I18n.t("Pause downloads for this manga"),
-    })
-    if counts.downloaded and counts.downloaded > 0 then
+    if downloaded > 0 then
         table.insert(actions, {
             id = "delete_all_downloaded",
-            text = I18n.f("Delete downloaded chapters (%1)", counts.downloaded),
+            text = I18n.f("Delete downloaded chapters (%1)", downloaded),
             destructive = true,
+        })
+    end
+    local queue = self.getDownloadQueue and self:getDownloadQueue()
+    local paused = queue and queue.isMangaPaused and queue:isMangaPaused(manga)
+    if manga and manga.id then
+        table.insert(actions, {
+            id = "toggle_manga_pause",
+            text = paused and I18n.t("Resume downloads for this manga") or I18n.t("Pause downloads for this manga"),
         })
     end
     if hasCancelableDownloads(self, manga) then
@@ -598,24 +492,11 @@ function Methods:getDownloadManagerActions()
         })
     end
 
-    table.insert(actions, { id = "keep_downloaded", text = I18n.t("Auto-download"), submenu = true })
-    table.insert(actions, { id = "bulk_downloads", text = I18n.t("More download options"), submenu = true })
-    local show_scanlator_filter = self.current_scanlator_filter ~= nil
-        or #(self:getChapterScanlatorChoices(context and context.chapters or {})) > 0
-    if show_scanlator_filter then
-        table.insert(actions, { id = "scanlator_filter", text = I18n.t("Scanlator filter"), submenu = true })
-    end
-    if manga and manga.id and not manga.local_only then
-        table.insert(actions, { id = "refresh_chapters", text = I18n.t("Refresh chapters") })
-    end
     return actions
 end
 
 
 function Methods:getBulkChapterActions(lookup)
-    if self:getDownloadManagerFilter() then
-        return self:getDownloadManagerActions()
-    end
     local actions = {}
     local context = self.current_chapter_context
     local local_only = context and context.manga and context.manga.local_only
@@ -663,9 +544,11 @@ function Methods:getBulkChapterActions(lookup)
             table.insert(actions, { id = "scanlator_filter", text = I18n.t("Scanlator filter"), submenu = true })
         end
         if hasCancelableDownloads(self, context and context.manga) then
-            table.insert(actions, self:getDownloadManagerFilter()
-                and { id = "cancel_manga_downloads", text = I18n.t("Cancel all tasks for this manga"), destructive = true }
-                or { id = "cancel_all_downloads", text = I18n.t("Cancel all downloads"), destructive = true })
+            table.insert(actions, {
+                id = "cancel_manga_downloads",
+                text = I18n.t("Cancel all tasks for this manga"),
+                destructive = true,
+            })
         end
         table.insert(actions, { id = "delete_selected", text = I18n.t("Delete downloads"), destructive = true })
         return actions
@@ -684,13 +567,11 @@ function Methods:getBulkChapterActions(lookup)
     for _index, action in ipairs(manga_actions) do
         table.insert(actions, action)
     end
+    for _index, action in ipairs(self:getDirectoryDownloadActions()) do
+        table.insert(actions, action)
+    end
     if show_scanlator_filter then
         table.insert(actions, { id = "scanlator_filter", text = I18n.t("Scanlator filter"), submenu = true })
-    end
-    if hasCancelableDownloads(self, context and context.manga) then
-        table.insert(actions, self:getDownloadManagerFilter()
-            and { id = "cancel_manga_downloads", text = I18n.t("Cancel all tasks for this manga"), destructive = true }
-            or { id = "cancel_all_downloads", text = I18n.t("Cancel all downloads"), destructive = true })
     end
 
     return actions
@@ -745,35 +626,6 @@ function Methods:showScanlatorFilterActions(menu_context)
     return true
 end
 
-function Methods:showDownloadManagerFilterActions(menu_context)
-    if not SuwayomiUI.showChapterActionsMenu then return false end
-    local actions = {}
-    local selected = self:getDownloadManagerFilter() or "all"
-    local counts = self.download_manager_counts or {}
-    for _, filter in ipairs({ "undownloaded", "downloaded", "failed", "active", "all" }) do
-        local label = self:formatDownloadManagerFilterLabel(filter)
-        if tonumber(counts[filter]) then label = I18n.f("%1 (%2)", label, counts[filter]) end
-        actions[#actions + 1] = {
-            id = filter,
-            text = (filter == selected and "● " or "") .. label,
-        }
-    end
-    SuwayomiUI.showChapterActionsMenu({
-        title = I18n.t("Download chapter filter"),
-        actions = actions,
-        anchor = menu_context and menu_context.anchor,
-        on_back = guardChapterCallback(self, function()
-            self:showBulkChapterActions(menu_context)
-        end),
-    }, guardChapterCallback(self, function(action)
-        if self.clearChapterSelection then self:clearChapterSelection(true) end
-        self.download_manager_filter = action.id
-        self:refreshChapterMenu()
-    end))
-    return true
-end
-
-
 function Methods:showBulkDownloadActions(menu_context)
     if not SuwayomiUI.showChapterActionsMenu then
         return
@@ -807,6 +659,144 @@ function Methods:showKeepDownloadedActions(menu_context)
     }, guardChapterCallback(self, function(action)
         self:performBulkChapterAction(action.id, menu_context)
     end))
+end
+
+local DELETE_POLICY_INHERIT = "__inherit__"
+
+local function deletePolicySummary(manga)
+    local effective, policy
+    if SuwayomiSettings.resolveDeleteChaptersSettings then
+        effective, policy = SuwayomiSettings:resolveDeleteChaptersSettings(manga)
+    else
+        effective = SuwayomiSettings:loadDeleteChaptersSettings()
+    end
+    policy = policy or {}
+    local mark_read = policy.delete_after_mark_read == nil
+        and I18n.f("Follow global (%1)", effective.delete_after_mark_read and I18n.t("yes") or I18n.t("no"))
+        or (effective.delete_after_mark_read and I18n.t("On") or I18n.t("Off"))
+    local finished = policy.delete_finished_while_reading == nil
+        and I18n.f("Follow global (%1)", RetentionLabels.format(effective.delete_finished_while_reading))
+        or RetentionLabels.format(effective.delete_finished_while_reading)
+    return mark_read, finished
+end
+
+function Methods:saveMangaDeletePolicy(manga, mutate)
+    local policy = SuwayomiSettings.loadMangaDeletePolicy
+        and SuwayomiSettings:loadMangaDeletePolicy(manga) or {}
+    policy = policy or {}
+    mutate(policy)
+    local saved, err = SuwayomiSettings:saveMangaDeletePolicy(manga, policy)
+    if not saved and err ~= nil then
+        self:showMessage(err or I18n.t("Failed to save settings."))
+        return false
+    end
+    if self.scheduleFinishedChapterCleanup then
+        self:scheduleFinishedChapterCleanup(0)
+    end
+    if self.refreshChapterMenu then self:refreshChapterMenu({ quick = true }) end
+    return true
+end
+
+function Methods:showDeleteAfterMarkReadPolicy(menu_context)
+    if not SuwayomiUI.showChoiceDialog then return false end
+    local manga = self.current_chapter_context and self.current_chapter_context.manga
+    if not manga then return false end
+    local effective, policy
+    if SuwayomiSettings.resolveDeleteChaptersSettings then
+        effective, policy = SuwayomiSettings:resolveDeleteChaptersSettings(manga)
+    else
+        effective = SuwayomiSettings:loadDeleteChaptersSettings()
+    end
+    policy = policy or {}
+    SuwayomiUI.showChoiceDialog({
+        title = I18n.t("When marked read"),
+        current = policy.delete_after_mark_read == nil and DELETE_POLICY_INHERIT or policy.delete_after_mark_read,
+        choices = {
+            {
+                value = DELETE_POLICY_INHERIT,
+                text = I18n.f("Follow global (%1)", effective.delete_after_mark_read and I18n.t("yes") or I18n.t("no")),
+            },
+            { value = true, text = I18n.t("Delete download") },
+            { value = false, text = I18n.t("Keep download") },
+        },
+        onSelect = guardChapterCallback(self, function(value)
+            self:saveMangaDeletePolicy(manga, function(next_policy)
+                next_policy.delete_after_mark_read =
+                    value == DELETE_POLICY_INHERIT and nil or value
+            end)
+        end),
+        anchor = menu_context and menu_context.anchor,
+    })
+    return true
+end
+
+function Methods:showDeleteFinishedPolicy(menu_context)
+    if not SuwayomiUI.showChoiceDialog then return false end
+    local manga = self.current_chapter_context and self.current_chapter_context.manga
+    if not manga then return false end
+    local effective, policy
+    if SuwayomiSettings.resolveDeleteChaptersSettings then
+        effective, policy = SuwayomiSettings:resolveDeleteChaptersSettings(manga)
+    else
+        effective = SuwayomiSettings:loadDeleteChaptersSettings()
+    end
+    policy = policy or {}
+    local choices = {
+        {
+            value = DELETE_POLICY_INHERIT,
+            text = I18n.f("Follow global (%1)", RetentionLabels.format(effective.delete_finished_while_reading)),
+        },
+    }
+    for value = 0, 5 do
+        choices[#choices + 1] = { value = value, text = RetentionLabels.format(value) }
+    end
+    SuwayomiUI.showChoiceDialog({
+        title = I18n.t("Auto-delete finished chapters"),
+        current = policy.delete_finished_while_reading == nil
+            and DELETE_POLICY_INHERIT or policy.delete_finished_while_reading,
+        choices = choices,
+        onSelect = guardChapterCallback(self, function(value)
+            self:saveMangaDeletePolicy(manga, function(next_policy)
+                next_policy.delete_finished_while_reading =
+                    value == DELETE_POLICY_INHERIT and nil or value
+            end)
+        end),
+        anchor = menu_context and menu_context.anchor,
+    })
+    return true
+end
+
+function Methods:showMangaDeletePolicy(menu_context)
+    if not SuwayomiUI.showChapterActionsMenu then return false end
+    local manga = self.current_chapter_context and self.current_chapter_context.manga
+    if not manga then return false end
+    local mark_read, finished = deletePolicySummary(manga)
+    SuwayomiUI.showChapterActionsMenu({
+        title = I18n.t("Per-manga delete policy"),
+        actions = {
+            {
+                id = "delete_after_mark_read_policy",
+                text = I18n.f("When marked read: %1", mark_read),
+                submenu = true,
+            },
+            {
+                id = "delete_finished_policy",
+                text = I18n.f("Auto-delete finished: %1", finished),
+                submenu = true,
+            },
+        },
+        anchor = menu_context and menu_context.anchor,
+        on_back = guardChapterCallback(self, function()
+            self:showBulkChapterActions(menu_context)
+        end),
+    }, guardChapterCallback(self, function(action)
+        if action.id == "delete_after_mark_read_policy" then
+            self:showDeleteAfterMarkReadPolicy(menu_context)
+        elseif action.id == "delete_finished_policy" then
+            self:showDeleteFinishedPolicy(menu_context)
+        end
+    end))
+    return true
 end
 
 
@@ -867,8 +857,7 @@ function Methods:refreshChapterMenu(options)
     if options.saved == nil then options.saved = self.current_chapter_context.saved end
     self.pending_chapter_menu_refresh = false
 
-    local menu_options_builder = options.quick and not self:getDownloadManagerFilter()
-        and self.buildQuickChapterMenuOptions
+    local menu_options_builder = options.quick and self.buildQuickChapterMenuOptions
         or self.buildChapterMenuOptions
     local menu_options = menu_options_builder(
         self,

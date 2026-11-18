@@ -73,12 +73,24 @@ The optional KOReader auto-mark prompt follows an explicit nonzero policy choice
 
 ## Manual deletion and retention
 
-Download operations are entered from a manga rather than a global Downloads tab.
-Manga information and manga action menus expose **Download management**, which
-opens that manga's chapter list directly. The title menu contains status filters,
-filter-aware selection, missing-chapter download, per-manga pause, cancellation,
-downloaded-file removal, auto-download, and chapter refresh controls. Chapter rows
-retain the normal Download, Delete, read-state, and Mark previous as read actions.
+Download operations are entered from a manga rather than a global Downloads tab
+or a separate management mode. The ordinary chapter directory opening focuses
+its first unread row unless a reader-return context supplies a more specific
+row. Its title menu contains selection, **Download options**, auto-download,
+per-manga pause, cancellation, read/downloaded-file removal, chapter refresh, and
+per-manga delete-policy controls. Chapter rows retain the normal Download, Delete,
+read-state, and Mark previous as read actions.
+
+Per-manga delete policy may override the global delete-after-mark-read and
+finished-retention defaults independently. The resolved policy controls manual
+read actions, reader-close enrollment, retention processing, and whether a
+downloaded read row still offers delete-after-read recovery. Global settings act
+only as defaults for manga without an override.
+
+Removing a manga from the Suwayomi Library also clears its auto-download policy,
+pause state, and per-manga delete override, cancels matching transfer jobs, and
+requests guarded removal of every recorded local chapter archive. Unsafe or busy
+archives remain preserved and are reported.
 
 The low-level inventory controller retains its cross-manga ordinary-Delete API,
 but primary navigation no longer renders that surface. It observes recorded paths
@@ -172,6 +184,11 @@ surfaces. Chapter/detail screens keep their normal paging and return behavior. `
 the checked settings store selects `zh_CN` or `en`; plugin initialization and
 language changes set the i18n override without mutating KOReader gettext state.
 Changing language reconstructs Settings, including the footer and submenus.
+
+Browse source-language selection is persisted independently from the plugin UI
+language. Missing saved state defaults to Chinese (`zh`). Successful language
+toggles update the checked settings store before replacing the live source list;
+failed writes keep the confirmed selection.
 
 ## Data And Packaging Boundaries
 

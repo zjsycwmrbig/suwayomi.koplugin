@@ -45,7 +45,7 @@ local SUPPORTED_AUTH_METHODS = {
     ui_login = true,
 }
 
-local DEFAULT_SOURCE_LANGUAGES = { "en" }
+local DEFAULT_SOURCE_LANGUAGES = { "zh" }
 local DEFAULT_BROWSE_SETTINGS = {
     show_nsfw_sources = false,
     hide_in_library_results = false,
@@ -64,6 +64,7 @@ local DEFAULT_DELETE_CHAPTERS_SETTINGS = {
     delete_after_mark_read = false,
     delete_finished_while_reading = 0,
 }
+local MANGA_DELETE_POLICIES_KEY = "manga_delete_policies"
 local DELETE_FINISHED_WHILE_READING_LIMITS = {
     [0] = true,
     [1] = true,
@@ -301,6 +302,24 @@ function SuwayomiSettings:normalizeDeleteChaptersSettings(value)
         delete_after_mark_read = value.delete_after_mark_read == true,
         delete_finished_while_reading = delete_finished_while_reading,
     }
+end
+
+function SuwayomiSettings:normalizeMangaDeletePolicy(value)
+    if type(value) ~= "table" then
+        return nil
+    end
+    local normalized = {}
+    if type(value.delete_after_mark_read) == "boolean" then
+        normalized.delete_after_mark_read = value.delete_after_mark_read
+    end
+    local delete_finished = tonumber(value.delete_finished_while_reading)
+    if delete_finished and DELETE_FINISHED_WHILE_READING_LIMITS[math.floor(delete_finished)] then
+        normalized.delete_finished_while_reading = math.floor(delete_finished)
+    end
+    if next(normalized) == nil then
+        return nil
+    end
+    return normalized
 end
 
 function SuwayomiSettings:normalizeMangaKeepNextUnreadDownloads(value)
@@ -855,6 +874,52 @@ function SuwayomiSettings:saveDeleteChaptersSettings(value)
         return nil, err
     end
     return normalized
+end
+
+function SuwayomiSettings:loadMangaDeletePolicy(manga)
+    local key = self:getMangaSettingsKey(manga)
+    if not key then
+        return nil
+    end
+    local policies = self:getStore():readKey(MANGA_DELETE_POLICIES_KEY, {})
+    if type(policies) ~= "table" then
+        return nil
+    end
+    return self:normalizeMangaDeletePolicy(policies[key])
+end
+
+function SuwayomiSettings:saveMangaDeletePolicy(manga, value)
+    local key = self:getMangaSettingsKey(manga)
+    local normalized = self:normalizeMangaDeletePolicy(value)
+    if not key then
+        return normalized
+    end
+    local policies = self:getStore():readKey(MANGA_DELETE_POLICIES_KEY, {})
+    if type(policies) ~= "table" then
+        policies = {}
+    else
+        policies = copyTable(policies)
+    end
+    policies[key] = normalized
+    local ok, err = self:getStore():saveKey(MANGA_DELETE_POLICIES_KEY, policies)
+    if not ok then
+        return nil, err
+    end
+    return normalized
+end
+
+function SuwayomiSettings:resolveDeleteChaptersSettings(manga)
+    local settings = self:loadDeleteChaptersSettings()
+    local policy = self:loadMangaDeletePolicy(manga)
+    if policy then
+        if policy.delete_after_mark_read ~= nil then
+            settings.delete_after_mark_read = policy.delete_after_mark_read
+        end
+        if policy.delete_finished_while_reading ~= nil then
+            settings.delete_finished_while_reading = policy.delete_finished_while_reading
+        end
+    end
+    return settings, policy
 end
 
 function SuwayomiSettings:loadAutoMarkPromptDismissed()

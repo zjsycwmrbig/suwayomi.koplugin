@@ -459,9 +459,7 @@ function Methods:selectAllChapters()
     self.chapter_range_selecting, self.chapter_range_start = nil, nil
     local context = self.current_chapter_context
     local manga = context and context.manga
-    local chapters = self.download_manager_filter
-        and self.download_manager_chapters
-        or self:getVisibleChapters(context and context.chapters or {})
+    local chapters = self:getVisibleChapters(context and context.chapters or {})
 
     self.selected_chapters = {}
     for _index, chapter in ipairs(chapters) do

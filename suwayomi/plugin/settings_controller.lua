@@ -655,11 +655,11 @@ function Methods:buildSettingsMenu()
                 {
                     text_func = function()
                         return I18n.f(
-                            "Delete when marked read: %1",
+                            "Default delete when marked read: %1",
                             self:getDeleteChaptersSettingSummary("delete_after_mark_read")
                         )
                     end,
-                    help_text = I18n.t("Applies when you manually mark chapters read in the plugin. Removes the downloaded file but keeps reading data. If a chapter is still downloading, request deletion again after it finishes. Turning this off does not cancel deletion requests already accepted."),
+                    help_text = I18n.t("Applies to manga without a per-manga override. When a chapter is manually marked read, removes its downloaded file but keeps reading data. If a chapter is still downloading, request deletion again after it finishes. Turning this off does not cancel deletion requests already accepted."),
                     keep_menu_open = true,
                     callback = function(touchmenu_instance)
                         self:toggleDeleteAfterMarkRead(touchmenu_instance)
@@ -668,11 +668,11 @@ function Methods:buildSettingsMenu()
                 {
                     text_func = function()
                         return I18n.f(
-                            "Delete after reading: %1",
+                            "Default delete after reading: %1",
                             self:getDeleteChaptersSettingSummary("delete_finished_while_reading")
                         )
                     end,
-                    help_text = I18n.t("Keeps the chapters finished most recently in each manga, not the highest chapter numbers. A chapter counts after you or KOReader mark it finished and you close it, or you manually mark it read in the plugin. Open chapters are not deleted. Off disables only this setting."),
+                    help_text = I18n.t("Default for manga without a per-manga override. Keeps the chapters finished most recently in each manga, not the highest chapter numbers. A chapter counts after you or KOReader mark it finished and you close it, or you manually mark it read in the plugin. Open chapters are not deleted. Off disables only this setting."),
                     keep_menu_open = true,
                     callback = function(touchmenu_instance)
                         self:showDeleteFinishedWhileReadingDialog(touchmenu_instance)

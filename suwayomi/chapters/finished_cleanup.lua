@@ -24,8 +24,10 @@ end
 
 local Methods = {}
 
-local function cleanupSetting()
-    local settings = SuwayomiSettings:loadDeleteChaptersSettings()
+local function cleanupSetting(manga)
+    local settings = SuwayomiSettings.resolveDeleteChaptersSettings
+        and SuwayomiSettings:resolveDeleteChaptersSettings(manga)
+        or SuwayomiSettings:loadDeleteChaptersSettings()
     return tonumber(settings and settings.delete_finished_while_reading) or 0
 end
 
@@ -229,17 +231,20 @@ local function flushPendingCompletions(self, journal)
 end
 
 function Methods:recordFinishedChapter(entry)
-    if cleanupSetting() <= 0 then
-        return false, "disabled"
+    if type(entry) ~= "table" then
+        return false, "invalid_entry"
     end
-    if type(entry) ~= "table" or entry.read ~= true
-        or not validId(entry.manga_id) or not validId(entry.chapter_id)
+    if entry.read == false and entry.manga_id and entry.chapter_id then
+        self:cancelFinishedChapter(entry.manga_id, entry.chapter_id)
+        return false, "unread"
+    end
+    if entry.read ~= true or not validId(entry.manga_id) or not validId(entry.chapter_id)
         or (entry.path ~= nil and (type(entry.path) ~= "string" or entry.path == ""))
     then
-        if type(entry) == "table" and entry.read == false and entry.manga_id and entry.chapter_id then
-            self:cancelFinishedChapter(entry.manga_id, entry.chapter_id)
-        end
-        return false, type(entry) == "table" and entry.read == false and "unread" or "invalid_entry"
+        return false, "invalid_entry"
+    end
+    if cleanupSetting({ id = entry.manga_id, title = entry.manga_title }) <= 0 then
+        return false, "disabled"
     end
 
     local journal, error_code = SuwayomiSettings:loadFinishedChapterCleanupJournal()
@@ -342,31 +347,18 @@ function Methods:cancelFinishedChapterCleanup()
     return scheduled
 end
 
-function Methods:onFinishedCleanupSettingChanged(previous_value, current_value)
-    previous_value = tonumber(previous_value) or 0
+function Methods:onFinishedCleanupSettingChanged(_previous_value, current_value)
     current_value = tonumber(current_value) or 0
+    self:cancelFinishedChapterCleanup()
+    self.finished_cleanup_cursor = nil
+    self.finished_cleanup_traversal_retry_at = nil
+    self.finished_cleanup_traversal_reasons = nil
     if current_value <= 0 then
-        self.finished_cleanup_pending = nil
-        self.finished_cleanup_enrollment_retry_count = nil
-        self:cancelFinishedChapterCleanup()
-        self.finished_cleanup_cursor = nil
-        self.finished_cleanup_traversal_retry_at = nil
-        self.finished_cleanup_traversal_reasons = nil
         self.finished_cleanup_notification_state = nil
         self.finished_cleanup_retry_reasons = nil
-        local _journal, error_code = SuwayomiSettings:loadFinishedChapterCleanupJournal()
-        if error_code then
-            notifyCompatibility(self, error_code)
-            return false
-        end
-        SuwayomiSettings:clearFinishedChapterCleanupJournal()
         self.finished_cleanup_compatibility_notification = nil
-    elseif previous_value <= 0 or current_value < previous_value then
-        self.finished_cleanup_cursor = nil
-        self.finished_cleanup_traversal_retry_at = nil
-        self.finished_cleanup_traversal_reasons = nil
-        self:scheduleFinishedChapterCleanup(0)
     end
+    return self:scheduleFinishedChapterCleanup(0)
 end
 
 function Methods:onFinishedCleanupDownloadDirectoryChanged()
@@ -490,15 +482,15 @@ local function processFinishedChapterCleanup(self, summary)
     end
     self.finished_cleanup_compatibility_notification = nil
 
-    local setting = cleanupSetting()
-    if setting <= 0 then
-        self.finished_cleanup_pending = nil
+    local retained_pending = {}
+    for _, entry in ipairs(self.finished_cleanup_pending or {}) do
+        if cleanupSetting({ id = entry.manga_id }) > 0 then
+            retained_pending[#retained_pending + 1] = entry
+        end
+    end
+    self.finished_cleanup_pending = #retained_pending > 0 and retained_pending or nil
+    if not self.finished_cleanup_pending then
         self.finished_cleanup_enrollment_retry_count = nil
-        SuwayomiSettings:clearFinishedChapterCleanupJournal()
-        self.finished_cleanup_cursor = nil
-        self.finished_cleanup_traversal_retry_at = nil
-        self.finished_cleanup_traversal_reasons = nil
-        return summary
     end
 
     -- No cleanup may use the old order while a newer captured completion is
@@ -510,6 +502,28 @@ local function processFinishedChapterCleanup(self, summary)
         return summary
     end
     journal = committed
+
+    local policies_changed = false
+    for manga_id in pairs(journal.mangas or {}) do
+        if cleanupSetting({ id = manga_id }) <= 0 then
+            journal.mangas[manga_id] = nil
+            policies_changed = true
+        end
+    end
+    if policies_changed then
+        local saved, save_error = SuwayomiSettings:saveFinishedChapterCleanupJournal(journal)
+        if not saved then
+            summary.storage_error = save_error
+            self.finished_cleanup_cursor = nil
+            return summary
+        end
+        journal = saved
+        if self.finished_cleanup_cursor
+            and not journal.mangas[self.finished_cleanup_cursor.manga_id]
+        then
+            self.finished_cleanup_cursor = nil
+        end
+    end
 
     local ledger = self:loadChapterLedger()
     pruneUnreadRecords(self, journal, ledger, summary)
@@ -540,6 +554,7 @@ local function processFinishedChapterCleanup(self, summary)
         )
         if not cursor_skips_manga then
         local manga = journal.mangas[manga_id]
+        local setting = cleanupSetting({ id = manga_id })
         sortRecords(manga.records)
         local candidate_count = math.max(0, #manga.records - (setting - 1))
         local index = 1
