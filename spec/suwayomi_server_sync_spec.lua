@@ -217,6 +217,33 @@ describe("one-click server sync", function()
         assert.equals(old, contexts[paths[2]].endpoint_scope)
     end)
 
+    it("indexes chapter names once for many archive matches", function()
+        local archives = require("suwayomi/readsync/sync_archives")
+        local reads, chapters, contexts = 0, {}, {}
+        local manga = { id = "m", title = "Series", source = { id = "source" } }
+        for i = 1, 140 do
+            local name = "Chapter " .. i
+            chapters[i] = setmetatable({ id = tostring(i), chapter_number = i }, {
+                __index = function(_, key)
+                    if key == "name" then reads = reads + 1; return name end
+                end,
+            })
+            if i <= 80 then
+                local path = "/books/" .. i .. ".cbz"
+                contexts[path] = {
+                    endpoint_scope = old, path = path, manga_id = "m", manga_title = manga.title, source = manga.source,
+                    chapter_id = tostring(i), chapter_name = name, chapter_number = i,
+                }
+            end
+        end
+        local doc = { reader_return_contexts = contexts, chapter_ledger = {} }
+        local count = archives.relink(doc, { endpoint_scope = current, manga = { manga } },
+            { mangas = { m = { chapters = chapters } } }, owner:getDownloadQueue(),
+            function() return {} end, {}, function() end)
+        assert.equals(80, count)
+        assert.equals(#chapters + count, reads)
+    end)
+
     it("rechecks the saved shelf before deleting from an earlier prompt", function()
         assert.is_true(owner:syncLibraryFromServer())
         request.on_finish(snapshot())

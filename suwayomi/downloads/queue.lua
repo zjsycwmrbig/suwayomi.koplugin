@@ -590,9 +590,10 @@ function DownloadQueue:withArchiveEvidence(job, progress)
     return progress
 end
 
-function DownloadQueue:setStatus(manga, chapter, status)
-    self.statuses[self:getKey(manga, chapter)] = status
-    self.onStatusChanged()
+function DownloadQueue:setStatus(manga, chapter, status, progress_only)
+    local key = self:getKey(manga, chapter)
+    self.statuses[key] = status
+    self.onStatusChanged(key, progress_only)
 end
 
 function DownloadQueue:notifyDownloadFailure(message)

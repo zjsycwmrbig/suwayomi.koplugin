@@ -24,17 +24,29 @@ local function unique(index, key, item)
     if key then index[key] = index[key] == nil and item or false end
 end
 
-local function chapterMatch(chapters, record)
-    local matches = {}
+local function chapterIndex(chapters)
+    local index = {}
     for _, chapter in ipairs(chapters) do
-        if chapter.name == record.chapter_name
-            and (record.chapter_number == nil or chapter.chapter_number == record.chapter_number)
-            and (record.scanlator == nil or chapter.scanlator == record.scanlator) then
-            matches[#matches + 1] = chapter
+        local name = chapter.name
+        if type(name) == "string" then
+            local bucket = index[name] or {}
+            index[name] = bucket
+            bucket[#bucket + 1] = chapter
         end
     end
-    if #matches ~= 1 then return nil end
-    local chapter = matches[1]
+    return index
+end
+
+local function chapterMatch(index, record)
+    local chapter
+    for _, candidate in ipairs(index[record.chapter_name] or {}) do
+        if (record.chapter_number == nil or candidate.chapter_number == record.chapter_number)
+            and (record.scanlator == nil or candidate.scanlator == record.scanlator) then
+            if chapter then return nil end
+            chapter = candidate
+        end
+    end
+    if not chapter then return nil end
     if tostring(chapter.id) == tostring(record.chapter_id) or record.chapter_number ~= nil then
         return chapter
     end
@@ -90,14 +102,19 @@ function Archives.relink(doc, library, chapter_cache, queue, inspect, original_l
         end
     end
 
-    local by_key = {}
+    local by_key, indexes = {}, {}
     for path, candidate in pairs(candidates) do
         local row = candidate.row
         if not candidate.conflict and type(row.chapter_name) == "string" then
             local identity = hints[originKey(row)]
             local manga = identity and destinations[identity]
             local listing = manga and chapter_cache.mangas[tostring(manga.id)]
-            local chapter = listing and chapterMatch(listing.chapters, row)
+            local chapter
+            if listing then
+                local id = tostring(manga.id)
+                if not indexes[id] then indexes[id] = chapterIndex(listing.chapters) end
+                chapter = chapterMatch(indexes[id], row)
+            end
             if chapter and identity == Archives.mangaIdentity(row.manga_title, manga.source) then
                 local key = queue:getKey(manga, chapter)
                 local old_key = queue:getKey({ id = row.manga_id }, { id = row.chapter_id })

@@ -577,7 +577,7 @@ function SuwayomiSettings:saveLibraryCache(credentials, listing)
         arrivals_supported = listing and listing.arrivals_supported,
     }
     if not scope or not usableLibraryCache(cache) then return nil, "invalid_library_cache" end
-    local ok, err = self:getStore():saveKey("library_cache", copyLibraryValue(cache))
+    local ok, err = self:getStore():saveKey("library_cache", copyLibraryValue(cache), true)
     if not ok then return nil, err end
     return cache
 end
@@ -669,7 +669,7 @@ function SuwayomiSettings:saveChapterCache(credentials, manga, chapters)
         end
     end
     cache.mangas[tostring(manga.id)] = copyLibraryValue(listing)
-    local ok, err = self:getStore():saveKey("chapter_cache", cache)
+    local ok, err = self:getStore():saveKey("chapter_cache", cache, true)
     if not ok then return nil, err end
     local result = copyLibraryValue(listing)
     result.endpoint_scope = scope

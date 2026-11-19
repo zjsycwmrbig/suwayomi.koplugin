@@ -235,7 +235,12 @@ function Methods:prepareChapterMenuItems(manga, chapters, ledger, options, looku
     end
 
     if not ledger and ledger_changed then
-        local persisted, err = self:saveChapterLedger(read_ledger)
+        local commit_options = { skip_unchanged = true }
+        if self.stageReaderReturnContextsForChapters then
+            commit_options.reader_return_manga = manga
+            commit_options.reader_return_entries = reader_return_entries
+        end
+        local persisted, err = self:saveChapterLedger(read_ledger, nil, commit_options)
         if not persisted then
             self:showMessage(err or I18n.t("Failed to save settings."))
             local committed = self:loadChapterLedger()
@@ -247,9 +252,6 @@ function Methods:prepareChapterMenuItems(manga, chapters, ledger, options, looku
             end
             return nil, err
         end
-    end
-    if not saved and not ledger and self.saveReaderReturnContextsForChapters then
-        self:saveReaderReturnContextsForChapters(manga, reader_return_entries)
     end
 
     SuwayomiDebug.log({
@@ -291,6 +293,10 @@ function Methods:buildChapterMenuOptions(manga, chapters, ledger, options)
     local visible_chapters = self:getVisibleChapters(chapters)
     local read_ledger = ledger or self:loadChapterLedger()
     local lookup = self.buildChapterDownloadLookup and self:buildChapterDownloadLookup(manga, read_ledger)
+    if lookup then
+        -- These observations belong to this one render, never an action or later repaint.
+        lookup.render_chapter_paths, lookup.render_archive_presence = {}, {}
+    end
     local prepared, err = self:prepareChapterMenuItems(manga, visible_chapters, ledger, options, lookup, read_ledger)
     if not prepared then return nil, err end
     local title = self.formatChapterListScreenTitle and self.formatChapterListScreenTitle(manga) or I18n.t("Chapters")
@@ -847,6 +853,49 @@ function Methods:showChapterActions(manga, chapter)
     end)
 end
 
+
+function Methods:updateChapterDownloadRows(changed_chapters)
+    local context, options = self.current_chapter_context, self.current_chapter_options
+    local manga = context and context.manga
+    if not manga or not options or not options.chapters or not SuwayomiUI.patchChapterMenuStatuses then return false end
+    if options.download_index_source ~= options.chapters then
+        local index = {}
+        for position, item in ipairs(options.chapters) do
+            index[self:getChapterDownloadKey(manga, item)] = position
+        end
+        options.download_index_source, options.download_index = options.chapters, index
+    end
+    local queue, lookup = self:getDownloadQueue()
+    local changes = {}
+    for key in pairs(changed_chapters) do
+        local position = options.download_index[key]
+        if position then
+            local item = options.chapters[position]
+            if not lookup then
+                lookup = self:buildChapterDownloadLookup(manga)
+                lookup.render_chapter_paths, lookup.render_archive_presence = {}, {}
+            end
+            local local_only = manga.local_only or not self:canMutateChapterArchive(manga, item, lookup)
+            local status = not local_only and queue:getStatus(manga, item) or nil
+            if not status then
+                if self:isChapterDownloaded(manga, item, lookup) then status = { state = "downloaded" }
+                elseif item.is_read then status = { state = "read" } end
+            end
+            local display = queue:formatChapterMenuStatus(item, status)
+            if self.selection_mode and self:isChapterSelected(manga, item) then
+                display = self:addChapterSelectionMarker(display)
+            end
+            changes[position] = { chapter = item, status = display, download_status = copyDownloadStatus(status) }
+        end
+    end
+    if not next(changes) then return true end
+    if not SuwayomiUI.patchChapterMenuStatuses(self.current_chapter_menu, changes) then return false end
+    for _, change in pairs(changes) do
+        change.chapter.menu_status = change.status
+        change.chapter._suwayomi_download_status = change.download_status
+    end
+    return true
+end
 
 function Methods:refreshChapterMenu(options)
     local started_at = SuwayomiDebug.now()

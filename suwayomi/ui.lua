@@ -359,6 +359,31 @@ function SuwayomiUI.showConfirm(options)
     return dialog
 end
 
+function SuwayomiUI.patchChapterMenuStatuses(menu, changes)
+    if not menu or not menu.item_table or not menu.updateItems then return false end
+    local page = menu.page
+    if type(page) ~= "number" or type(menu.perpage) ~= "number" then return false end
+    local visible = {}
+    for _, index in ipairs(menu.page_items and menu.page_items[page] or {}) do visible[index] = true end
+    local first, last = (page - 1) * menu.perpage + 1, page * menu.perpage
+    for index, change in pairs(changes) do
+        local row = menu.item_table[index]
+        if not row or row.chapter ~= change.chapter then return false end
+    end
+    local repaint = false
+    for index, change in pairs(changes) do
+        local row = menu.item_table[index]
+        if row.mandatory ~= change.status then
+            row.mandatory = change.status
+            if (menu.page_items and visible[index]) or (not menu.page_items and index >= first and index <= last) then
+                repaint = true
+            end
+        end
+    end
+    if repaint then menu:updateItems(nil, true) end
+    return true
+end
+
 function SuwayomiUI.updateChapterMenu(menu, options, onSelectCallback, onHoldCallback)
     if not menu then
         return

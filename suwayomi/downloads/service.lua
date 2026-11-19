@@ -34,7 +34,7 @@ function Service:new(options)
         max_active_chapters = service.settings:loadMaxParallelChapterDownloads(),
         getCredentials = function() return service.settings:load() end,
         debug_logger = Debug.log,
-        onStatusChanged = function() service:statusChanged() end,
+        onStatusChanged = function(key, progress_only) service:statusChanged(key, progress_only) end,
         onMessage = function(message) service:notify(message) end,
         commitChapterArchive = function(job, path) return service:commitCompletion(job, path) end,
     }
@@ -83,9 +83,9 @@ function Service:getSnapshot()
     return self.queue:getSnapshot()
 end
 
-function Service:deliver(subscription, message, full_refresh, changed_mangas)
+function Service:deliver(subscription, message, full_refresh, changed_mangas, changed_chapters)
     if self.stopped or not subscription.callback then return end
-    local ok = pcall(subscription.callback, self:getSnapshot(), message, full_refresh, changed_mangas)
+    local ok = pcall(subscription.callback, self:getSnapshot(), message, full_refresh, changed_mangas, changed_chapters)
     if not ok then Debug.log({ operation = "downloadService.subscriber", event = "callback_error" }) end
 end
 
@@ -102,7 +102,7 @@ function Service:subscribe(callback)
     end
 end
 
-function Service:notify(message, full_refresh, changed_mangas)
+function Service:notify(message, full_refresh, changed_mangas, chapter_key)
     if self.stopped then return end
     for subscription in pairs(self.subscribers) do
         subscription.full_refresh = subscription.full_refresh or full_refresh
@@ -110,6 +110,12 @@ function Service:notify(message, full_refresh, changed_mangas)
         if changed_mangas then
             subscription.changed_mangas = subscription.changed_mangas or {}
             for manga_id in pairs(changed_mangas) do subscription.changed_mangas[manga_id] = true end
+        end
+        if chapter_key then
+            subscription.changed_chapters = subscription.changed_chapters or {}
+            subscription.changed_chapters[chapter_key] = true
+        else
+            subscription.unscoped_change = true
         end
         if not subscription.scheduled then
             subscription.scheduled = true
@@ -119,18 +125,22 @@ function Service:notify(message, full_refresh, changed_mangas)
                 local pending_mangas = subscription.changed_mangas
                 subscription.message, subscription.full_refresh = nil, nil
                 subscription.changed_mangas = nil
-                self:deliver(subscription, pending_message, pending_full, pending_mangas)
+                local pending_chapters = not subscription.unscoped_change and subscription.changed_chapters or nil
+                subscription.changed_chapters, subscription.unscoped_change = nil, nil
+                self:deliver(subscription, pending_message, pending_full, pending_mangas, pending_chapters)
             end)
         end
     end
 end
 
-function Service:statusChanged()
+function Service:statusChanged(chapter_key, progress_only)
     if self.stopped then return end
-    if self.cleanup then self.cleanup:scheduleFinishedChapterCleanup(0) end
-    if self.manual_deletion then self.manual_deletion:wake() end
-    if self.refill then self.refill:wake() end
-    self:notify()
+    if not progress_only then
+        if self.cleanup then self.cleanup:scheduleFinishedChapterCleanup(0) end
+        if self.manual_deletion then self.manual_deletion:wake() end
+        if self.refill then self.refill:wake() end
+    end
+    self:notify(nil, nil, nil, chapter_key)
 end
 
 function Service:commitCompletion(job, path)

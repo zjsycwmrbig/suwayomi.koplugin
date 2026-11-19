@@ -29,6 +29,22 @@ local function deepCopy(source, seen)
     return target
 end
 
+local function equalValue(left, right, seen)
+    if left == right then return true end
+    if type(left) ~= "table" or type(right) ~= "table" then return false end
+    seen = seen or {}
+    if seen[left] then return seen[left] == right end
+    seen[left] = right
+    for key, value in pairs(left) do
+        if not equalValue(value, right[key], seen) then return false end
+    end
+    for key in pairs(right) do
+        if left[key] == nil then return false end
+    end
+    seen[left] = nil
+    return true
+end
+
 local function sortKeys(left, right)
     local left_type = type(left)
     local right_type = type(right)
@@ -374,7 +390,7 @@ function SettingsStore:readKey(key, default)
     return val
 end
 
-function SettingsStore:saveDocument(mutator)
+function SettingsStore:saveDocument(mutator, skip_unchanged)
     if self.is_blocked then
         return nil, "store_blocked_ambiguous_transaction: " .. tostring(self.blocked_reason)
     end
@@ -382,6 +398,7 @@ function SettingsStore:saveDocument(mutator)
     local doc = self:load()
     local staged = deepCopy(doc)
     mutator(staged)
+    if skip_unchanged and equalValue(doc, staged) then return true, doc end
 
     self.tx_counter = self.tx_counter + 1
     local tx_id = string.format("tx-%d-%d-%04x", os.time(), self.tx_counter, math.random(0, 0xffff))
@@ -462,7 +479,11 @@ function SettingsStore:saveDocument(mutator)
     return true, staged
 end
 
-function SettingsStore:saveKey(key, value)
+function SettingsStore:saveKey(key, value, skip_unchanged)
+    if skip_unchanged and not self.is_blocked then
+        local doc = self:load()
+        if equalValue(doc[key], value) then return true, doc end
+    end
     return self:saveDocument(function(doc)
         doc[key] = value
     end)

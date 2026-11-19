@@ -153,6 +153,18 @@ function Methods:hasChapterArchiveReadAssociation(manga, chapter, path, lookup)
     return hasScopedPathRecord(manga, chapter, path, lookup)
 end
 
+local function archiveExists(owner, path, lookup)
+    local cache = lookup and lookup.render_archive_presence
+    if not cache then return owner:chapterArchiveExists(path) end
+    local cached = cache[path]
+    if not cached then
+        local exists, err = owner:chapterArchiveExists(path)
+        cached = { exists = exists, error = err }
+        cache[path] = cached
+    end
+    return cached.exists, cached.error
+end
+
 function Methods:getApplicableChapterReadChoice(manga, chapter, lookup)
     if not currentScope(manga) then return nil end
     local entry = lookup.ledger[self:getChapterLedgerKey(manga, chapter)]
@@ -170,7 +182,7 @@ function Methods:getApplicableChapterReadChoice(manga, chapter, lookup)
     elseif not entry.endpoint_scope then
         local path, reason = self:getChapterPath(manga, chapter, lookup)
         if reason == "foreign_path" then return nil end
-        if path and self:chapterArchiveExists(path) and not hasScopedPathRecord(manga, chapter, path, lookup) then return nil end
+        if path and archiveExists(self, path, lookup) and not hasScopedPathRecord(manga, chapter, path, lookup) then return nil end
     end
     return entry
 end
@@ -198,7 +210,7 @@ function Methods:canMutateChapterArchive(manga, chapter, lookup)
     local entry = ledger[tostring(manga.id) .. ":" .. tostring(chapter.id)]
     if type(entry) == "table" and entry.endpoint_scope ~= manga.endpoint_scope then return false end
     local path = self:getChapterPath(manga, chapter, lookup)
-    if path and self:chapterArchiveExists(path) then
+    if path and archiveExists(self, path, lookup) then
         -- A scoped pathless choice does not associate bytes found at a guessed path.
         return hasScopedPathRecord(manga, chapter, path, lookup)
     end
@@ -222,9 +234,7 @@ function Methods:canDeleteChapterArchive(manga, chapter, lookup)
     return true
 end
 
-function Methods:getChapterPath(manga, chapter, lookup)
-    if type(manga) ~= "table" or type(chapter) ~= "table" or not currentScope(manga) then return nil end
-    lookup = lookup or self:buildChapterDownloadLookup(manga)
+local function resolveChapterPath(self, manga, chapter, lookup)
     if chapter.local_path and lookup.foreign_paths[chapter.local_path] then return nil, "foreign_path" end
     local entries
     if chapter.id ~= nil then entries = lookup.by_id[tostring(chapter.id)]
@@ -232,7 +242,7 @@ function Methods:getChapterPath(manga, chapter, lookup)
     for _, entry in ipairs(entries or {}) do
         if (compatible(entry, manga) or (chapter.local_only and entry.endpoint_scope == nil))
             and (not chapter.local_path or chapter.local_path == entry.path)
-            and not lookup.foreign_paths[entry.path] and self:chapterArchiveExists(entry.path) then
+            and not lookup.foreign_paths[entry.path] and archiveExists(self, entry.path, lookup) then
             return entry.path
         end
     end
@@ -251,6 +261,20 @@ function Methods:getChapterPath(manga, chapter, lookup)
     return chapter_path
 end
 
+function Methods:getChapterPath(manga, chapter, lookup)
+    if type(manga) ~= "table" or type(chapter) ~= "table" or not currentScope(manga) then return nil end
+    lookup = lookup or self:buildChapterDownloadLookup(manga)
+    local paths = lookup.render_chapter_paths
+    if not paths then return resolveChapterPath(self, manga, chapter, lookup) end
+    local cached = paths[chapter]
+    if not cached then
+        local path, reason = resolveChapterPath(self, manga, chapter, lookup)
+        cached = { path = path, reason = reason }
+        paths[chapter] = cached
+    end
+    return cached.path, cached.reason
+end
+
 -- Scope-safe presence/path only; Open must still validate archive integrity.
 function Methods:isChapterDownloaded(manga, chapter, lookup)
     local chapter_path = self:getChapterPath(manga, chapter, lookup)
@@ -258,7 +282,7 @@ function Methods:isChapterDownloaded(manga, chapter, lookup)
         return false, nil
     end
 
-    return self:chapterArchiveExists(chapter_path), chapter_path
+    return archiveExists(self, chapter_path, lookup), chapter_path
 end
 
 function Methods:chapterArchiveExists(chapter_path)

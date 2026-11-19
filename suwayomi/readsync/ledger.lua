@@ -89,7 +89,10 @@ function Methods:commitChapterRead(ledger, options)
         end
         mergeLedger(doc, ledger, options.replace_read_state)
         outcomes = queue.manual_deletion:applyRead(doc, options.captures, options.unread_keys)
-    end)
+        if options.reader_return_entries then
+            self:stageReaderReturnContextsForChapters(doc, options.reader_return_manga, options.reader_return_entries)
+        end
+    end, options.skip_unchanged)
     if not called then return nil, "invalid_state", {} end
     if not ok then
         if queue.scheduleReconciliation then queue:scheduleReconciliation() end
@@ -102,8 +105,10 @@ function Methods:commitChapterRead(ledger, options)
     return true, nil, outcomes
 end
 
-function Methods:saveChapterLedger(ledger, mangas)
-    local ok, err = self:commitChapterRead(ledger, { replace_read_state = true, mangas = mangas })
+function Methods:saveChapterLedger(ledger, mangas, options)
+    options = options or {}
+    options.replace_read_state, options.mangas = true, mangas
+    local ok, err = self:commitChapterRead(ledger, options)
     if not ok then return nil, err end
     return self:getDownloadQueue().settings:loadChapterLedger()
 end
@@ -241,7 +246,7 @@ function Methods:mergeChaptersWithReadLedger(manga, chapters, options)
     end
 
     if changed then
-        local saved, err = self:saveChapterLedger(ledger)
+        local saved, err = self:saveChapterLedger(ledger, nil, { skip_unchanged = true })
         if not saved then return nil, err end
     end
 

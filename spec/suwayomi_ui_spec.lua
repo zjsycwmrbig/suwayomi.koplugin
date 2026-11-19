@@ -544,6 +544,31 @@ describe("suwayomi/ui", function()
         end
     end)
 
+    it("patches chapter statuses without repainting off-screen or identical rows", function()
+        local ui = require("suwayomi/ui")
+        local a, b, c = { id = "a" }, { id = "b" }, { id = "c" }
+        local repaints = 0
+        local menu = {
+            page = 2, perpage = 1, page_items = { { 1, 2 }, { 3 } },
+            item_table = { { chapter = a, mandatory = "old A" }, { chapter = b }, { chapter = c } },
+            updateItems = function(_, _, reuse_layout)
+                assert.is_true(reuse_layout)
+                repaints = repaints + 1
+            end,
+        }
+        local untouched = menu.item_table[2]
+        assert.is_true(ui.patchChapterMenuStatuses(menu, { [1] = { chapter = a, status = "new A" } }))
+        assert.equals("new A", menu.item_table[1].mandatory)
+        assert.equals(0, repaints)
+        assert.is_true(ui.patchChapterMenuStatuses(menu, { [3] = { chapter = c, status = "new C" } }))
+        assert.equals(1, repaints)
+        assert.is_true(ui.patchChapterMenuStatuses(menu, { [3] = { chapter = c, status = "new C" } }))
+        assert.equals(1, repaints)
+        assert.equals(untouched, menu.item_table[2])
+        assert.is_false(ui.patchChapterMenuStatuses(menu, { [3] = { chapter = a, status = "stale" } }))
+        assert.equals("new C", menu.item_table[3].mandatory)
+    end)
+
     it("shows the complete download error in a text viewer through the public facade", function()
         Marker.install()
         local ui = require("suwayomi/ui")

@@ -954,6 +954,25 @@ describe("process-owned download navigation", function()
         assert.are.equal("Source", second.active[1].manga.source.name)
     end)
 
+    it("checkpoints continuous progress without rewriting settings for every page", function()
+        local plugin = host("files")
+        local queue = plugin:getDownloadQueue()
+        assert(queue:enqueue(manga, chapters[1], directory))
+        advance(0)
+        local active = assert(queue:getActiveJob("m1:c1"))
+        local store = settings:getStore()
+        queue:recordProgress(active, { state = "downloading", current = 1, total = 8 })
+        local checkpoint = store:getTransactionId()
+        queue:recordProgress(active, { state = "downloading", current = 3, total = 8 })
+        assert.equals(checkpoint, store:getTransactionId())
+        assert.equals(3, queue:getStatus(manga, chapters[1]).current)
+        assert.equals(1, settings:loadDownloadQueue()[1].progress.current)
+        active.persisted_progress_at = queue.now() - 5
+        queue:recordProgress(active, { state = "downloading", current = 4, total = 8 })
+        assert.are_not.equal(checkpoint, store:getTransactionId())
+        assert.equals(4, settings:loadDownloadQueue()[1].progress.current)
+    end)
+
     it("refreshes live chapter rows but leaves hidden and retired widgets unchanged", function()
         local plugin, owner = host("files")
         local queue = plugin:getDownloadQueue()
@@ -964,10 +983,19 @@ describe("process-owned download navigation", function()
         plugin.current_chapter_menu = menu
         plugin:trackSuwayomiScreen("chapters", menu)
         plugin:refreshChapterMenu({ quick = true })
+        require("suwayomi/ui").patchChapterMenuStatuses = function(widget, changes)
+            for index, change in pairs(changes) do
+                assert.equals(change.chapter, widget.item_table[index].chapter)
+                widget.item_table[index].mandatory = change.status
+            end
+            return true
+        end
+        local original_rows = menu.item_table
         local initial = menu.item_table[1].mandatory
         local active = queue:getActiveJob("m1:c1")
         write(active.progress_path, "state=downloading\ncurrent=3\ntotal=8\n")
         advance(0.5)
+        assert.are.equal(original_rows, menu.item_table)
         assert.are_not.equal(initial, menu.item_table[1].mandatory)
         assert.is_truthy(menu.item_table[1].mandatory:find("3/8", 1, true))
         local visible = menu.item_table

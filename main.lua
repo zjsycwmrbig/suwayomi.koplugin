@@ -67,7 +67,7 @@ function SuwayomiPlugin:getDownloadQueue()
     return self:createDownloadQueue()
 end
 
-function SuwayomiPlugin:onDownloadSnapshot(snapshot, message, full_refresh, changed_mangas)
+function SuwayomiPlugin:onDownloadSnapshot(snapshot, message, full_refresh, changed_mangas, changed_chapters)
     if self.download_host_closed then return end
     self.download_snapshot = snapshot
     if message then self:showMessage(message) end
@@ -83,7 +83,10 @@ function SuwayomiPlugin:onDownloadSnapshot(snapshot, message, full_refresh, chan
     if navigation:isCurrent(self.current_chapter_menu) then
         local context = self.current_chapter_context
         local affected = changed_mangas and context and context.manga and changed_mangas[tostring(context.manga.id)]
-        self:refreshChapterMenu((full_refresh or affected) and {} or { quick = true })
+        if full_refresh or affected or not changed_chapters
+            or not self:updateChapterDownloadRows(changed_chapters) then
+            self:refreshChapterMenu((full_refresh or affected) and {} or { quick = true })
+        end
     end
     if navigation:isCurrent(self.current_downloads_menu) then self:refreshDownloadsMenu() end
     if navigation:isCurrent(self.current_home_dialog) then self:refreshHomeDownloads() end
@@ -233,8 +236,8 @@ function SuwayomiPlugin:init()
     self.selection_mode = self.selection_mode == true
     local service = DownloadService.get()
     if not self.detach_download_subscription and not self.download_host_closed then
-        self.detach_download_subscription = service:subscribe(function(snapshot, message, full_refresh, changed_mangas)
-            self:onDownloadSnapshot(snapshot, message, full_refresh, changed_mangas)
+        self.detach_download_subscription = service:subscribe(function(snapshot, message, full_refresh, changed_mangas, changed_chapters)
+            self:onDownloadSnapshot(snapshot, message, full_refresh, changed_mangas, changed_chapters)
         end)
     end
     if self.ui and self.ui.menu then

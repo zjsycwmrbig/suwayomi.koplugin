@@ -282,32 +282,36 @@ function Methods:saveReaderReturnContext(manga, chapter, chapter_path)
     return context
 end
 
-function Methods:saveReaderReturnContextsForChapters(manga, entries)
-    if type(manga) ~= "table" or type(entries) ~= "table" or #entries == 0 then
-        return {}
-    end
-
-    local contexts = normalizeContextStore(SuwayomiSettings:loadReaderReturnContexts())
-    local saved = {}
-    local changed = false
+function Methods:stageReaderReturnContextsForChapters(doc, manga, entries)
+    local saved, changed = {}, false
+    if type(manga) ~= "table" or type(entries) ~= "table" or #entries == 0 then return saved, changed end
+    local contexts = normalizeContextStore(doc.reader_return_contexts)
     for _, entry in ipairs(entries) do
         local previous = entry and contexts[entry.path]
         local context = entry and buildContext(manga, entry.chapter, entry.path,
             previous and previous.endpoint_scope)
         if context then
             saved[#saved + 1] = context
-            if not contextMatches(contexts[context.path], context) then
+            if not contextMatches(previous, context) then
+                if previous and previous.endpoint_scope == context.endpoint_scope
+                    and previous.manga_id == context.manga_id and previous.chapter_id == context.chapter_id then
+                    context.archive_generation = previous.archive_generation
+                end
                 contexts[context.path] = context
                 changed = true
             end
         end
     end
+    if changed then doc.reader_return_contexts = contexts end
+    return saved, changed
+end
 
+function Methods:saveReaderReturnContextsForChapters(manga, entries)
+    local doc = { reader_return_contexts = SuwayomiSettings:loadReaderReturnContexts() }
+    local saved, changed = self:stageReaderReturnContextsForChapters(doc, manga, entries)
     if changed then
-        local ok, err = SuwayomiSettings:saveReaderReturnContexts(contexts)
-        if not ok then
-            return {}, err
-        end
+        local ok, err = SuwayomiSettings:saveReaderReturnContexts(doc.reader_return_contexts)
+        if not ok then return {}, err end
     end
     return saved
 end

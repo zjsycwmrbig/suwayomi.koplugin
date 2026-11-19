@@ -136,6 +136,23 @@ describe("suwayomi/settings/store", function()
         assert.are.equal(saved_doc.store_transaction.id, loaded_table.store_transaction.id)
     end)
 
+    it("skips disk writes for equal cache values and unchanged staged refreshes", function()
+        store:load({ cache = { manga = { "1", "2" } }, ledger = { chapter = true } })
+        assert(store:saveKey("cache", { manga = { "1", "2" } }, true))
+        assert(store:saveDocument(function(doc)
+            doc.ledger = { chapter = true }
+        end, true))
+        assert.equals(0, #mock_io.written)
+
+        assert(store:saveDocument(function(doc)
+            doc.ledger = { chapter = false }
+            doc.reader_return_contexts = { file = { chapter_id = "1" } }
+        end, true))
+        assert.equals(1, #mock_io.written)
+        assert.is_false(store:load().ledger.chapter)
+        assert.equals("1", store:load().reader_return_contexts.file.chapter_id)
+    end)
+
     it("leaves committed cache unchanged and cleans temp file on pre-replacement write failure", function()
         store:load({ setting = "old_value" })
         mock_io.fail_write = true

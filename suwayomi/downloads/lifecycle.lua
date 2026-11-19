@@ -516,16 +516,26 @@ function Lifecycle:recordProgress(active, progress)
         -- Terminal progress is only an observation until finishFromProgress
         -- validates the archive and finalizes active and persistent state.
         if progress.state ~= "downloaded" and progress.state ~= "skipped" and progress.state ~= "failed" then
-            self:upsertPersistentJob(self:buildPersistentJob(active.manga, active.chapter, active.download_directory, progress.state, {
-                started_at = active.started_at,
-                last_progress_at = active.last_progress_at,
-                retry_count = active.retry_count,
-                archive_generation = active.archive_generation,
-                provenance = active.provenance,
-                repair = active.repair,
-                progress = active.progress,
-            }))
-            self:setStatus(active.manga, active.chapter, self:statusForJob(active, progress.state))
+            -- The worker already publishes progress atomically. Persist job
+            -- transitions immediately, and checkpoint counters at most every five seconds.
+            local state_changed = active.persisted_progress_state ~= progress.state
+            if state_changed or active.last_progress_at - (active.persisted_progress_at or 0) >= 5 then
+                local saved = self:upsertPersistentJob(self:buildPersistentJob(
+                    active.manga, active.chapter, active.download_directory, progress.state, {
+                        started_at = active.started_at,
+                        last_progress_at = active.last_progress_at,
+                        retry_count = active.retry_count,
+                        archive_generation = active.archive_generation,
+                        provenance = active.provenance,
+                        repair = active.repair,
+                        progress = active.progress,
+                    }))
+                if saved then
+                    active.persisted_progress_state = progress.state
+                    active.persisted_progress_at = active.last_progress_at
+                end
+            end
+            self:setStatus(active.manga, active.chapter, self:statusForJob(active, progress.state), not state_changed)
         end
     end
 end
