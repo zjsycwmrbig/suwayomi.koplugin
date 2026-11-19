@@ -157,6 +157,12 @@ function Methods:syncLibraryFromServer()
                 self:showMessage(I18n.t("Could not sync with server. Local state was kept."))
                 return
             end
+            local staged, stage_error = Settings:prepareChapterCacheIndex(scope, chapters.mangas, true)
+            if not staged then
+                Debug.log({ operation = "server_sync", event = "error", error = stage_error })
+                self:showMessage(I18n.t("Could not save server sync."))
+                return
+            end
             self:cancelMangaNetworkRequests()
             local client = self:getClient()
             client:cancelLibraryNetworkRequests()
@@ -169,8 +175,9 @@ function Methods:syncLibraryFromServer()
                     local original = type(archive) == "table" and archive.path == path and not archive.retired
                         and archive.evidence or nil
                     return ArchiveIdentity.inspect(path, root, original)
-                end)
+                end, staged.index)
             end)
+            staged.finish(called and saved)
             if not called or not saved then
                 Debug.log({ operation = "server_sync", event = "error", error = (not called and saved) or err })
                 if queue:isBlocked() then queue:scheduleReconciliation() end

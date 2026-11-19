@@ -60,7 +60,7 @@ local function retain(doc, bucket, key, record, origin)
     retained[bucket][scope][key] = record
 end
 
-function Snapshot.apply(doc, library, chapter_cache, queue, inspect)
+function Snapshot.apply(doc, library, chapter_cache, queue, inspect, chapter_index)
     local scope = library.endpoint_scope
     local previous, current = members(doc.library_cache), members(library)
     local old_chapters = doc.chapter_cache
@@ -191,7 +191,7 @@ function Snapshot.apply(doc, library, chapter_cache, queue, inspect)
     end
 
     doc.library_cache = library
-    doc.chapter_cache = chapter_cache
+    doc.chapter_cache = chapter_index or chapter_cache
     return counts, departed
 end
 

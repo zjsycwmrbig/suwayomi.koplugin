@@ -10,6 +10,7 @@
 local DataStorage = require("datastorage")
 local LuaSettings = require("luasettings")
 local SettingsStore = require("suwayomi/settings/store")
+local ChapterCache = require("suwayomi/settings/chapter_cache")
 local SourceFilters = require("suwayomi/source_filters")
 
 local SuwayomiSettings = {
@@ -391,7 +392,10 @@ function SuwayomiSettings:isBlocked()
 end
 
 function SuwayomiSettings:reconcile()
-    return self:getStore():reconcile()
+    local store = self:getStore()
+    local ok, status = store:reconcile()
+    if ok then ChapterCache.finishReconciliation(store, status == "committed") end
+    return ok, status
 end
 
 function SuwayomiSettings:getSettingsDir()
@@ -638,38 +642,58 @@ local function usableChapterListing(settings, listing, scope)
     return true
 end
 
-local function chapterCacheCollection(cache, scope)
-    return type(cache) == "table" and cache.version == 1 and cache.endpoint_scope == scope
-        and type(cache.mangas) == "table"
+local function validIndexedListing(settings, scope, id, listing)
+    return usableChapterListing(settings, listing, scope) and tostring(listing.manga.id) == id
 end
 
 function SuwayomiSettings:loadChapterCache(credentials, manga)
     local scope = self:normalizeEndpointScope(type(credentials) == "table" and credentials.server_url)
     if not scope or not chapterCacheIdentity(self, manga, scope) then return nil end
-    local cache = self:getStore():readKey("chapter_cache")
-    if not chapterCacheCollection(cache, scope) then return nil end
-    local listing = cache.mangas[tostring(manga.id)]
-    if not usableChapterListing(self, listing, scope) or tostring(listing.manga.id) ~= tostring(manga.id) then return nil end
-    local result = copyLibraryValue(listing)
+    local store = self:getStore()
+    local cache = store:readKey("chapter_cache")
+    if not ChapterCache.isCollection(cache, scope) then return nil end
+    local id = tostring(manga.id)
+    local listing = ChapterCache.read(store, cache, id)
+    if not validIndexedListing(self, scope, id, listing) then return nil end
+    local result = cache.version == 1 and copyLibraryValue(listing) or listing
     result.endpoint_scope = scope
     return result
+end
+
+function SuwayomiSettings:prepareChapterCacheIndex(scope, updates, replace)
+    local store = self:getStore()
+    local previous = store:readKey("chapter_cache")
+    local index, err, created = ChapterCache.stage(store, previous, scope, updates, replace, function(id, entry)
+        return validIndexedListing(self, scope, id, entry)
+    end)
+    if not index then return nil, err end
+    return {
+        index = index,
+        finish = function(committed) ChapterCache.finish(store, previous, index, created, committed) end,
+    }
+end
+
+local function publishChapterCacheIndex(settings, scope, updates)
+    local staged, err = settings:prepareChapterCacheIndex(scope, updates, false)
+    if not staged then return nil, err end
+    local ok
+    ok, err = settings:getStore():saveKey("chapter_cache", staged.index, true)
+    staged.finish(ok)
+    return ok, err
+end
+
+function SuwayomiSettings:migrateChapterCache()
+    local previous = self:getStore():readKey("chapter_cache")
+    local scope = type(previous) == "table" and self:normalizeEndpointScope(previous.endpoint_scope)
+    if not scope or not ChapterCache.isCollection(previous, scope) or previous.version ~= 1 then return true end
+    return publishChapterCacheIndex(self, scope, {})
 end
 
 function SuwayomiSettings:saveChapterCache(credentials, manga, chapters)
     local scope = self:normalizeEndpointScope(type(credentials) == "table" and credentials.server_url)
     local listing = { manga = manga, chapters = chapters }
     if not scope or not usableChapterListing(self, listing, scope) then return nil, "invalid_chapter_cache" end
-    local cache = { version = 1, endpoint_scope = scope, mangas = {} }
-    local previous = self:getStore():readKey("chapter_cache")
-    if chapterCacheCollection(previous, scope) then
-        for key, saved in pairs(previous.mangas) do
-            if usableChapterListing(self, saved, scope) and key == tostring(saved.manga.id) then
-                cache.mangas[key] = saved
-            end
-        end
-    end
-    cache.mangas[tostring(manga.id)] = copyLibraryValue(listing)
-    local ok, err = self:getStore():saveKey("chapter_cache", cache, true)
+    local ok, err = publishChapterCacheIndex(self, scope, { [tostring(manga.id)] = listing })
     if not ok then return nil, err end
     local result = copyLibraryValue(listing)
     result.endpoint_scope = scope

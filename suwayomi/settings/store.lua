@@ -45,6 +45,8 @@ local function equalValue(left, right, seen)
     return true
 end
 
+SettingsStore.valuesEqual = equalValue
+
 local function sortKeys(left, right)
     local left_type = type(left)
     local right_type = type(right)
@@ -166,7 +168,7 @@ local function defaultIoAdapter()
             return os.rename(old_path, new_path)
         end,
         sync_dir = function(dir_path)
-            local ok_lfs, lfs = pcall(require, "lfs")
+            local ok_lfs, lfs = pcall(require, "suwayomi/fs")
             if ok_lfs and lfs and lfs.attributes then
                 local attr = lfs.attributes(dir_path)
                 if not attr or attr.mode ~= "directory" then
@@ -211,12 +213,15 @@ local function defaultIoAdapter()
             return content
         end,
         dir_exists = function(dir_path)
-            local ok_lfs, lfs = pcall(require, "lfs")
+            local ok_lfs, lfs = pcall(require, "suwayomi/fs")
             if ok_lfs and lfs and lfs.attributes then
                 local attr = lfs.attributes(dir_path)
                 return attr and attr.mode == "directory"
             end
             return true
+        end,
+        mkdir = function(dir_path)
+            return require("suwayomi/fs").mkdir(dir_path)
         end,
     }
 end

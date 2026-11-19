@@ -143,8 +143,8 @@ describe("suwayomi settings atomic failure handling", function()
                 files[path] = nil
                 return true
             end,
-            sync_dir = function()
-                if io_adapter.fail_sync_dir then
+            sync_dir = function(path)
+                if io_adapter.fail_sync_dir and (not io_adapter.fail_sync_dir_path or io_adapter.fail_sync_dir_path == path) then
                     return false, "injected sync dir failure"
                 end
                 return true
@@ -404,6 +404,70 @@ describe("suwayomi settings atomic failure handling", function()
         assert.same({}, SuwayomiSettings:loadChapterCache(credentials, manga).chapters)
     end)
 
+    it("migrates legacy chapters to separate files only after all writes are confirmed", function()
+        local store = SuwayomiSettings:getStore()
+        local credentials = SuwayomiSettings:load()
+        local legacy = {
+            version = 1, endpoint_scope = credentials.server_url,
+            mangas = {
+                ["7"] = { manga = { id = 7 }, chapters = { { id = 71, name = "First" } } },
+                ["8"] = { manga = { id = 8 }, chapters = { { id = 81, name = "Second" } } },
+            },
+        }
+        assert(store:saveKey("chapter_cache", legacy))
+        assert(SuwayomiSettings:saveChapterLedger({ ["7:71"] = { read = true } }))
+        local real_rename = io_adapter.rename
+        io_adapter.rename = function(from, to)
+            if to == settings_path then return nil, "injected index failure" end
+            return real_rename(from, to)
+        end
+        assert.is_nil(SuwayomiSettings:migrateChapterCache())
+        assert.equals(1, store:readKey("chapter_cache").version)
+        assert.equals("First", SuwayomiSettings:loadChapterCache(credentials, { id = 7 }).chapters[1].name)
+        for path in pairs(io_adapter.files) do assert.not_matches("suwayomi_chapters/", path) end
+        io_adapter.rename = real_rename
+        assert(SuwayomiSettings:migrateChapterCache())
+        local index = store:readKey("chapter_cache")
+        assert.equals(2, index.version)
+        assert.is_nil(index.mangas["7"].chapters)
+        assert.is_true(SuwayomiSettings:loadChapterLedger()["7:71"].read)
+        local directory = mock_dir .. "/suwayomi_chapters/"
+        local first = directory .. index.mangas["7"].file
+        local second = directory .. index.mangas["8"].file
+        assert.is_string(io_adapter.files[first])
+        assert.is_string(io_adapter.files[second])
+        assert.not_matches("First", io_adapter.files[settings_path])
+        assert.not_matches("Second", io_adapter.files[settings_path])
+
+        local read, paths = io_adapter.read, {}
+        io_adapter.read = function(path)
+            paths[#paths + 1] = path
+            return read(path)
+        end
+        SuwayomiSettings:setStore(SettingsStore:new({ path = settings_path, io = io_adapter }))
+        assert.equals("Second", SuwayomiSettings:loadChapterCache(credentials, { id = 8 }).chapters[1].name)
+        assert.same({ settings_path, second }, paths)
+        io_adapter.files[first] = "invalid cache"
+        assert.is_nil(SuwayomiSettings:loadChapterCache(credentials, { id = 7 }))
+        assert.equals("Second", SuwayomiSettings:loadChapterCache(credentials, { id = 8 }).chapters[1].name)
+    end)
+
+    it("reuses identical chapter files and removes superseded ones after publication", function()
+        local store = SuwayomiSettings:getStore()
+        local credentials = SuwayomiSettings:load()
+        local manga, chapters = { id = 7 }, { { id = 71 } }
+        assert(SuwayomiSettings:saveChapterCache(credentials, manga, chapters))
+        local initial_tx = store:getTransactionId()
+        local old_ref = store:readKey("chapter_cache").mangas["7"].file
+        local old_path = mock_dir .. "/suwayomi_chapters/" .. old_ref
+        assert(SuwayomiSettings:saveChapterCache(credentials, manga, chapters))
+        assert.equals(initial_tx, store:getTransactionId())
+        assert.equals(old_ref, store:readKey("chapter_cache").mangas["7"].file)
+        assert(SuwayomiSettings:saveChapterCache(credentials, manga, {}))
+        assert.is_nil(io_adapter.files[old_path])
+        assert.same({}, SuwayomiSettings:loadChapterCache(credentials, manga).chapters)
+    end)
+
     it("preserves committed chapters and unrelated state after a rejected replacement", function()
         local credentials = {
             server_url = "http://suwayomi.test", auth_method = "basic_auth",
@@ -441,6 +505,7 @@ describe("suwayomi settings atomic failure handling", function()
         local manga = { id = 7 }
         assert(SuwayomiSettings:saveChapterCache(credentials, manga, { { id = 71 } }))
         io_adapter.fail_sync_dir = true
+        io_adapter.fail_sync_dir_path = mock_dir
         local saved, err = SuwayomiSettings:saveChapterCache(credentials, manga, {})
         assert.is_nil(saved)
         assert.is_string(err)

@@ -225,6 +225,8 @@ function SuwayomiPlugin:isBookMode()
     return self.document ~= nil or (self.ui and self.ui.document ~= nil)
 end
 
+local chapter_cache_migration_queued
+
 function SuwayomiPlugin:init()
     I18n.setLanguage(SuwayomiSettings:loadPluginLanguage())
     if SuwayomiAPI.setDebugLogger then
@@ -244,6 +246,13 @@ function SuwayomiPlugin:init()
         self.ui.menu:registerToMainMenu(self)
     end
     self:installReaderFinishAdapter()
+    if SuwayomiSettings.migrateChapterCache and not chapter_cache_migration_queued then
+        chapter_cache_migration_queued = true
+        UIManager:scheduleIn(1, function()
+            local ok, err = SuwayomiSettings:migrateChapterCache()
+            if not ok then SuwayomiDebug.log({ operation = "chapter_cache_migration", event = "error", error = err }) end
+        end)
+    end
     SuwayomiDebug.log({ operation = "plugin_init", event = "end" })
 end
 

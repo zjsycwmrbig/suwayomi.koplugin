@@ -244,9 +244,10 @@ describe("remote unread revokes deferred manual deletion (#38)", function()
         local before = committed()
         local open = settings.store.io.open
         local writes = 0
-        settings.store.io.open = function(...)
+        settings.store.io.open = function(filename, ...)
+            if not filename:find(settings.store.path .. ".tmp.", 1, true) then return open(filename, ...) end
             writes = writes + 1
-            if writes == 1 then return open(...) end -- The scoped chapter cache saves before ledger reconciliation.
+            if writes == 1 then return open(filename, ...) end -- The cache index saves before ledger reconciliation.
             return nil, "injected storage failure"
         end
         local context = preload(false)

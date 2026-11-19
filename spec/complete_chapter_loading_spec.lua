@@ -643,6 +643,7 @@ describe("complete stored chapter loading", function()
         local store = settings:getStore()
         local write, writes = store.io.write, 0
         store.io.write = function(handle, content)
+            if not content:find('["chapter_cache"]', 1, true) then return write(handle, content) end
             writes = writes + 1
             if writes == 2 then return false, "injected menu write failure" end
             return write(handle, content)
@@ -726,6 +727,7 @@ describe("complete stored chapter loading", function()
                 local write, writes, committed_before_menu = store.io.write, 0
                 local failed_write = pending and 3 or 2
                 store.io.write = function(handle, content)
+                    if not content:find('["chapter_cache"]', 1, true) then return write(handle, content) end
                     writes = writes + 1
                     if writes == failed_write then
                         committed_before_menu = store:serializeDocument(store:load())
@@ -843,6 +845,7 @@ describe("complete stored chapter loading", function()
                 local write, writes = store.io.write, 0
                 local after_cache
                 store.io.write = function(handle, content)
+                    if not content:find('["chapter_cache"]', 1, true) then return write(handle, content) end
                     writes = writes + 1
                     if writes == 2 then
                         assert.are.same({ "202", "203", "204", "205", "206" },
