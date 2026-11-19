@@ -1382,6 +1382,9 @@ msgctxt "chapter action"
 msgid "Open"
 msgstr "打开"
 
+msgid "Open %1 manga to refresh their chapter lists."
+msgstr "另有 %1 部漫画的目录将在打开时刷新。"
+
 msgid "Open chapter list"
 msgstr "打开章节列表"
 
@@ -1534,6 +1537,9 @@ msgstr "已安排重试"
 
 msgid "Retry time unavailable."
 msgstr "重试时间不可用。"
+
+msgid "Reused %1 existing chapter files."
+msgstr "已复用 %1 个已有章节文件。"
 
 msgid "Save"
 msgstr "保存"

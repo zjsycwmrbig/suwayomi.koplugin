@@ -734,7 +734,7 @@ function Methods:buildSettingsMenu()
         },
         {
             text = I18n.t("Sync from server"), keep_menu_open = true,
-            callback = function() self:syncLibraryFromServer() end,
+            callback = function() UIManager:nextTick(function() self:syncLibraryFromServer() end) end,
         },
         {
             text = I18n.t("Close plugin"), keep_menu_open = true,

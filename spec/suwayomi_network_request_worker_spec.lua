@@ -63,7 +63,7 @@ describe("suwayomi/network/request_worker", function()
         end
     end)
 
-    it("loads stored chapters for tracked Library manga and rejects a failed list", function()
+    it("loads stored chapters for tracked Library manga and defers an individual failure", function()
         local queried = {}
         local api = require("suwayomi/api")
         api.queryChaptersForManga = function(_, id)
@@ -80,8 +80,9 @@ describe("suwayomi/network/request_worker", function()
 
         request.tracked_manga.m3 = true
         local failed = worker:run({}, request, "/sync")
-        assert.is_false(failed.ok)
-        assert.is_nil(failed.chapter_lists)
+        assert.is_true(failed.ok)
+        assert.same(result.chapter_lists, failed.chapter_lists)
+        assert.same({ m3 = true }, failed.deferred_chapters)
     end)
 
     after_each(function()

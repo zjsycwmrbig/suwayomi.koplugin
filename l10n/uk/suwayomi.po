@@ -1547,6 +1547,9 @@ msgctxt "chapter action"
 msgid "Open"
 msgstr "Відкрити"
 
+msgid "Open %1 manga to refresh their chapter lists."
+msgstr ""
+
 msgid "Open chapter list"
 msgstr "Відкрити список розділів"
 
@@ -1718,6 +1721,10 @@ msgstr "Повтор заплановано"
 
 msgid "Retry time unavailable."
 msgstr "Час повторної спроби недоступний."
+
+#, fuzzy
+msgid "Reused %1 existing chapter files."
+msgstr "Оновлення розділів..."
 
 msgid "Save"
 msgstr "Зберегти"

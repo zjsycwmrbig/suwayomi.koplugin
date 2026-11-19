@@ -1359,6 +1359,9 @@ msgctxt "chapter action"
 msgid "Open"
 msgstr ""
 
+msgid "Open %1 manga to refresh their chapter lists."
+msgstr ""
+
 msgid "Open chapter list"
 msgstr ""
 
@@ -1512,6 +1515,9 @@ msgid "Retry scheduled"
 msgstr ""
 
 msgid "Retry time unavailable."
+msgstr ""
+
+msgid "Reused %1 existing chapter files."
 msgstr ""
 
 msgid "Save"

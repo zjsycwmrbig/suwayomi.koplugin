@@ -697,7 +697,8 @@ function SuwayomiSettings:prepareServerSyncCaches(scope, snapshot, tracked_manga
             manga.scanlator_metadata = nil
         end
         manga.scanlator_metadata_failed = nil
-        if tracked_manga[id] then
+        if tracked_manga[id] and not (type(snapshot.deferred_chapters) == "table"
+            and snapshot.deferred_chapters[id] == true and snapshot.chapter_lists[id] == nil) then
             local listing = { manga = manga, chapters = snapshot.chapter_lists[id] }
             if type(listing.chapters) ~= "table" or not usableChapterListing(self, listing, scope) then return nil end
             for _, chapter in ipairs(listing.chapters) do

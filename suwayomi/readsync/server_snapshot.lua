@@ -1,6 +1,7 @@
 -- Boundary: explicit server-authoritative sync planning and checked settings updates.
 -- This module never writes to the server or touches archive files.
 
+local Archives = require("suwayomi/readsync/sync_archives")
 local Snapshot = {}
 
 local function members(library)
@@ -11,16 +12,34 @@ local function members(library)
     return result
 end
 
+local function trackIdentity(tracked, title, source)
+    local identity = Archives.mangaIdentity(title, source)
+    if identity then tracked[identity] = true end
+end
+
+function Snapshot.isTracked(tracked, manga)
+    local identity = Archives.mangaIdentity(manga.title, manga.source)
+    return tracked[tostring(manga.id)] or (identity and tracked[identity])
+end
+
 function Snapshot.trackedManga(doc)
     local tracked = {}
     local cache = doc.chapter_cache
     if type(cache) == "table" and type(cache.mangas) == "table" then
-        for id in pairs(cache.mangas) do tracked[tostring(id)] = true end
+        for id, listing in pairs(cache.mangas) do
+            tracked[tostring(id)] = true
+            if type(listing) == "table" and type(listing.manga) == "table" then
+                trackIdentity(tracked, listing.manga.title, listing.manga.source)
+            end
+        end
     end
     for _, records in pairs({ ledger = doc.chapter_ledger, contexts = doc.reader_return_contexts }) do
         if type(records) == "table" then
             for _, entry in pairs(records) do
-                if type(entry) == "table" and entry.manga_id ~= nil then tracked[tostring(entry.manga_id)] = true end
+                if type(entry) == "table" and entry.manga_id ~= nil then
+                    tracked[tostring(entry.manga_id)] = true
+                    trackIdentity(tracked, entry.manga_title, entry.source)
+                end
             end
         end
     end
@@ -41,7 +60,7 @@ local function retain(doc, bucket, key, record, origin)
     retained[bucket][scope][key] = record
 end
 
-function Snapshot.apply(doc, library, chapter_cache, queue)
+function Snapshot.apply(doc, library, chapter_cache, queue, inspect)
     local scope = library.endpoint_scope
     local previous, current = members(doc.library_cache), members(library)
     local old_chapters = doc.chapter_cache
@@ -53,15 +72,31 @@ function Snapshot.apply(doc, library, chapter_cache, queue)
             end
         end
     end
+    for _, context in pairs(doc.reader_return_contexts or {}) do
+        if type(context) == "table" and context.in_library == true and context.manga_id then
+            local id = tostring(context.manga_id)
+            previous[id] = previous[id] or { id = id, title = context.manga_title, source = context.source }
+        end
+    end
+    local identities = {}
+    for _, manga in ipairs(library.manga) do
+        local identity = Archives.mangaIdentity(manga.title, manga.source)
+        if identity then identities[identity] = true end
+    end
     local departed, retired_refills = {}, {}
     for id, manga in pairs(previous) do
-        if not current[id] then departed[id], retired_refills[id] = manga, true end
+        local identity = Archives.mangaIdentity(manga.title, manga.source)
+        if not current[id] and not (identity and identities[identity]) then
+            departed[id], retired_refills[id] = manga, true
+        end
     end
 
     local ledger = doc.chapter_ledger or {}
     doc.chapter_ledger = ledger
+    local original_ledger = {}
+    for key, entry in pairs(ledger) do original_ledger[key] = entry end
     local counts = { chapters = 0, pending = 0, jobs = 0 }
-    local remote_chapters, revoke = {}, {}
+    local remote_chapters, revoke, invalidate_archives = {}, {}, {}
     for id, listing in pairs(chapter_cache.mangas) do
         local rows = {}
         remote_chapters[id] = rows
@@ -110,6 +145,7 @@ function Snapshot.apply(doc, library, chapter_cache, queue)
                     counts.pending = counts.pending + 1
                 end
                 revoke[key] = true
+                invalidate_archives[key] = true
             end
         end
     end
@@ -139,7 +175,20 @@ function Snapshot.apply(doc, library, chapter_cache, queue)
         end
         if next(retired_refills) then queue.refill:retire(doc, retired_refills) end
     end
-    if queue.manual_deletion then queue.manual_deletion:applyRead(doc, nil, revoke) end
+    counts.relinked = Archives.relink(doc, library, chapter_cache, queue, inspect, original_ledger, function(old_key, key)
+        invalidate_archives[old_key], invalidate_archives[key] = true, true
+        revoke[old_key], revoke[key] = true, true
+        local old_entry = ledger[old_key]
+        if old_key ~= key and type(old_entry) == "table" and old_entry.pending_read_sync == true then
+            retain(doc, "read", old_key, original_ledger[old_key], old_entry.endpoint_scope)
+            old_entry.pending_read_sync, old_entry.pending_read_state = nil, nil
+            counts.pending = counts.pending + 1
+        end
+    end)
+    if queue.manual_deletion then
+        queue.manual_deletion:invalidateForServerSync(doc, invalidate_archives)
+        queue.manual_deletion:applyRead(doc, nil, revoke)
+    end
 
     doc.library_cache = library
     doc.chapter_cache = chapter_cache

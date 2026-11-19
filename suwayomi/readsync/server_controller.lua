@@ -1,8 +1,10 @@
 -- Boundary: one-click server sync, presentation, and optional removal of local downloads.
 
+local ArchiveIdentity = require("suwayomi/chapters/archive_identity")
 local I18n = require("suwayomi/i18n")
 local RequestJob = require("suwayomi/network/request_job")
 local Settings = require("suwayomi/settings")
+local Debug = require("suwayomi/debug")
 local Snapshot = require("suwayomi/readsync/server_snapshot")
 local UI = require("suwayomi/ui")
 
@@ -110,6 +112,7 @@ function Methods:syncLibraryFromServer()
     end
     local auth, store = Settings:getAuthIdentity(credentials), Settings:getStore()
     local queue = self:getDownloadQueue()
+    local root = Settings:loadDownloadDirectory()
     if not queue:checkStoreFence() or queue:isRecovering() then
         self:showMessage(I18n.t("Could not save server sync."))
         return false
@@ -124,12 +127,12 @@ function Methods:syncLibraryFromServer()
     local function release()
         if self.server_sync_request ~= request then return false end
         self.server_sync_request = nil
-        if not isCurrent(self, scope, auth) then return false end
+        if not isCurrent(self, scope, auth) or Settings:loadDownloadDirectory() ~= root then return false end
         self:schedulePendingReadSync()
         return true
     end
 
-    local active = RequestJob.start({
+    local launched, active = pcall(RequestJob.start, {
         owner = self,
         credentials = credentials,
         request = { action = "fetch_server_sync", tracked_manga = tracked, scanlator_filters = filters },
@@ -143,7 +146,13 @@ function Methods:syncLibraryFromServer()
                 self:showMessage(I18n.t("Could not sync with server. Local state was kept."))
                 return
             end
-            local library, chapters = Settings:prepareServerSyncCaches(scope, result, tracked, filters)
+            local selected = {}
+            for _, manga in ipairs(type(result.manga) == "table" and result.manga or {}) do
+                if type(manga) == "table" and Snapshot.isTracked(tracked, manga) then
+                    selected[tostring(manga.id)] = true
+                end
+            end
+            local library, chapters = Settings:prepareServerSyncCaches(scope, result, selected, filters)
             if not library then
                 self:showMessage(I18n.t("Could not sync with server. Local state was kept."))
                 return
@@ -152,30 +161,47 @@ function Methods:syncLibraryFromServer()
             local client = self:getClient()
             client:cancelLibraryNetworkRequests()
             local counts, departed
-            local called, saved = pcall(store.saveDocument, store, function(doc)
-                counts, departed = Snapshot.apply(doc, library, chapters, queue)
+            local called, saved, err = pcall(store.saveDocument, store, function(doc)
+                counts, departed = Snapshot.apply(doc, library, chapters, queue, function(path, key)
+                    local state = doc.manual_archive_state
+                    local archives = type(state) == "table" and state.archives
+                    local archive = type(archives) == "table" and archives[key]
+                    local original = type(archive) == "table" and archive.path == path and not archive.retired
+                        and archive.evidence or nil
+                    return ArchiveIdentity.inspect(path, root, original)
+                end)
             end)
             if not called or not saved then
+                Debug.log({ operation = "server_sync", event = "error", error = (not called and saved) or err })
                 if queue:isBlocked() then queue:scheduleReconciliation() end
                 self:showMessage(I18n.t("Could not save server sync."))
                 return
             end
             if counts.jobs > 0 and not queue:reconcile() then queue:scheduleReconciliation() end
-            client:showLibrary({ use_saved_snapshot = true })
             local summary = I18n.f("Synced %1 manga and %2 chapters from the server. Cleared %3 outdated downloads and set aside %4 local read changes.",
                 #library.manga, counts.chapters, counts.jobs, counts.pending)
+            local deferred = 0
+            for _ in pairs(type(result.deferred_chapters) == "table" and result.deferred_chapters or {}) do
+                deferred = deferred + 1
+            end
+            if counts.relinked > 0 then
+                summary = summary .. "\n" .. I18n.f("Reused %1 existing chapter files.", counts.relinked)
+            end
+            if deferred > 0 then
+                summary = summary .. "\n" .. I18n.f("Open %1 manga to refresh their chapter lists.", deferred)
+            end
             showSyncResult(self, queue, scope, auth, summary, store:load(), departed)
         end,
     })
     if self.server_sync_request == request then
-        if not active then
+        if not launched or not active then
             release()
             self:showMessage(I18n.t("Could not sync with server. Local state was kept."))
             return false
         end
         request.active = active
     end
-    return active ~= nil
+    return launched and active ~= nil
 end
 
 return { methods = Methods }

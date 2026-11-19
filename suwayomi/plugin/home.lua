@@ -86,7 +86,7 @@ function Methods:buildHomeActions()
             id = "sync",
             text = I18n.t("Sync from server"),
             callback = function()
-                self:syncLibraryFromServer()
+                UIManager:nextTick(function() self:syncLibraryFromServer() end)
             end,
         },
         {

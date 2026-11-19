@@ -82,6 +82,18 @@ describe("suwayomi/downloads/progress_file", function()
         package.loaded["suwayomi/downloads/progress_file"] = nil
     end)
 
+    it("treats a read error during polling as missing progress and closes the file", function()
+        local closed = false
+        io.open = function()
+            return {
+                lines = function() return function() error("No such file or directory") end end,
+                close = function() closed = true end,
+            }
+        end
+        assert.is_nil(progress_file.read("/moved-progress.txt"))
+        assert.is_true(closed)
+    end)
+
     it("isolates different keys and attempts without shared fallback names", function()
         local first, second = string.rep("1", 32), string.rep("2", 32)
         assert.are_not.equal(

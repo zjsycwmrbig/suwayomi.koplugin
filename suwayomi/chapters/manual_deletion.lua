@@ -198,6 +198,17 @@ function ManualDeletion:capture(key, path, root)
 end
 
 
+-- An older completion must not authorize deleting a newly reconciled download.
+function ManualDeletion:invalidateForServerSync(doc, keys)
+    if not next(keys) then return end
+    local state = collection(doc)
+    if not state then return end
+    for key in pairs(keys) do
+        local archive = state.archives[key]
+        if validTarget(archive) then archive.retired = true end
+    end
+end
+
 function ManualDeletion:applyRead(doc, captures, unread_keys)
     local outcomes = {}
     local state, state_error = collection(doc, #(captures or {}) > 0)

@@ -43,13 +43,14 @@ function ProgressFile.read(progress_path)
     end
 
     local status = {}
-    for line in handle:lines() do
-        local key, value = line:match("^([^=]+)=(.*)$")
-        if key then
-            status[key] = value
+    local ok = pcall(function()
+        for line in handle:lines() do
+            local key, value = line:match("^([^=]+)=(.*)$")
+            if key then status[key] = value end
         end
-    end
+    end)
     handle:close()
+    if not ok then return nil end
 
     if status.current then
         status.current = tonumber(status.current)

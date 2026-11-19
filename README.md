@@ -64,7 +64,7 @@ Chinese is selected by default when no source-language preference has been saved
 Adding or removing a language updates the source list immediately and is retained
 across plugin and KOReader restarts.
 
-**Sync from server** in Home or Settings reloads the server Library and the chapter lists of locally tracked manga still on that shelf. The server's read/unread flags take precedence for those chapters. Pending local choices that disagree are set aside in settings, and outdated download jobs are cleared so a fresh download can use the current server. A failed or incomplete fetch leaves the saved state in place. If a manga leaving the shelf still has recorded local files, Sync applies the server snapshot first and then offers to keep or delete those files. Downloads are kept unless you confirm deletion.
+**Sync from server** in Home or Settings reloads the server Library and the chapter lists of locally tracked manga still on that shelf. The server's read/unread flags take precedence for those chapters. Pending local choices that disagree are set aside in settings, and outdated download jobs are cleared so a fresh download can use the current server. A failed or incomplete Library fetch leaves the saved state in place. A chapter-list failure defers only that manga until it is opened. Existing files are linked when the source and chapter match uniquely, even if server IDs changed. If a manga leaving the shelf still has recorded local files, Sync applies the server snapshot first and then offers to keep or delete those files. Downloads are kept unless you confirm deletion.
 
 ### Read offline
 

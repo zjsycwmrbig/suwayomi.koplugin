@@ -10,6 +10,7 @@
 local json = require("dkjson")
 local SuwayomiAPI = require("suwayomi/api")
 local SubprocessJob = require("suwayomi/subprocess/job")
+local Snapshot = require("suwayomi/readsync/server_snapshot")
 
 local RequestWorker = {}
 local LIBRARY_TOO_LARGE_ERROR = "Suwayomi library is too large to load at once."
@@ -118,18 +119,28 @@ local function fetchServerSyncSnapshot(credentials, request)
     local snapshot = fetchLibrarySnapshot(credentials, request.scanlator_filters)
     if not snapshot.ok then return snapshot end
     local limit = SubprocessJob.max_result_bytes or 4 * 1024 * 1024
-    local bytes = #json.encode(snapshot)
-    snapshot.chapter_lists = {}
+    local selected = {}
+    snapshot.chapter_lists, snapshot.deferred_chapters = {}, {}
     for _, manga in ipairs(snapshot.manga) do
-        local id = tostring(manga.id)
-        if request.tracked_manga[id] then
-            local result = SuwayomiAPI.queryChaptersForManga(credentials, manga.id, { max_result_bytes = limit })
-            if not result.ok then return result end
-            bytes = bytes + #json.encode(result.chapters) + #id + 8
-            if bytes > limit then
-                return { ok = false, error = "Suwayomi sync snapshot is too large to load completely." }
+        if Snapshot.isTracked(request.tracked_manga, manga) then
+            local id = tostring(manga.id)
+            selected[#selected + 1] = id
+            snapshot.deferred_chapters[id] = true
+        end
+    end
+    local bytes = #json.encode(snapshot)
+    for _, id in ipairs(selected) do
+        if bytes >= limit then break end
+        local result = SuwayomiAPI.queryChaptersForManga(credentials, id, { max_result_bytes = limit })
+        if result.ok then
+            local size = #json.encode(result.chapters) + #id + 8
+            if bytes + size <= limit then
+                snapshot.chapter_lists[id] = result.chapters
+                snapshot.deferred_chapters[id] = nil
+                bytes = bytes + size
             end
-            snapshot.chapter_lists[id] = result.chapters
+        elseif result.retryable or result.status_code == 401 or result.status_code == 403 then
+            break
         end
     end
     return snapshot
