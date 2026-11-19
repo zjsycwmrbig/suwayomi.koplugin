@@ -733,8 +733,8 @@ function Methods:buildSettingsMenu()
             callback = function(menu) return self:showPluginLanguageDialog(menu) end,
         },
         {
-            text = I18n.t("Sync"), keep_menu_open = true,
-            callback = function() self:syncReadStateNow() end,
+            text = I18n.t("Sync from server"), keep_menu_open = true,
+            callback = function() self:syncLibraryFromServer() end,
         },
         {
             text = I18n.t("Close plugin"), keep_menu_open = true,

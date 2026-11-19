@@ -676,6 +676,41 @@ function SuwayomiSettings:saveChapterCache(credentials, manga, chapters)
     return result
 end
 
+-- Build the same validated cache shapes used by normal browsing, for a single checked commit.
+function SuwayomiSettings:prepareServerSyncCaches(scope, snapshot, tracked_manga, filters)
+    local library = {
+        version = 1,
+        endpoint_scope = scope,
+        manga = snapshot.manga,
+        categories = snapshot.categories,
+        arrivals_supported = snapshot.arrivals_supported,
+    }
+    if not scope or not usableLibraryCache(library) or snapshot.total_count ~= #library.manga
+        or type(snapshot.chapter_lists) ~= "table" then return nil end
+    local chapters = { version = 1, endpoint_scope = scope, mangas = {} }
+    for _, manga in ipairs(library.manga) do
+        local id = tostring(manga.id)
+        local metadata = manga.scanlator_metadata
+        if type(metadata) == "table" and metadata.manga_id == id and metadata.filter == filters[id] then
+            metadata.endpoint_scope = scope
+        else
+            manga.scanlator_metadata = nil
+        end
+        manga.scanlator_metadata_failed = nil
+        if tracked_manga[id] then
+            local listing = { manga = manga, chapters = snapshot.chapter_lists[id] }
+            if type(listing.chapters) ~= "table" or not usableChapterListing(self, listing, scope) then return nil end
+            for _, chapter in ipairs(listing.chapters) do
+                if type(chapter.is_read) ~= "boolean" then return nil end
+                chapter.pending_read_sync = nil
+                chapter._suwayomi_is_read = nil
+            end
+            chapters.mangas[id] = listing
+        end
+    end
+    return library, chapters
+end
+
 function SuwayomiSettings:loadSourceCache(credentials_or_url)
     local server_url, auth_identity = self:getSourceCacheScope(credentials_or_url)
     local cache = self:getStore():readKey("source_cache", nil)

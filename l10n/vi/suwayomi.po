@@ -571,6 +571,9 @@ msgstr ""
 msgid "Could not save saved filter."
 msgstr ""
 
+msgid "Could not save server sync."
+msgstr ""
+
 msgid "Could not start chapter download"
 msgstr ""
 
@@ -605,6 +608,9 @@ msgid "Could not start source loading: unknown error"
 msgstr ""
 
 msgid "Could not sync settings."
+msgstr ""
+
+msgid "Could not sync with server. Local state was kept."
 msgstr ""
 
 msgid "Could not update auto-download: %1"
@@ -729,6 +735,9 @@ msgid_plural "Deleted %1 local chapter downloads."
 msgstr[0] ""
 
 msgid "Deleted %1 local downloads; %2 skipped or failed."
+msgstr ""
+
+msgid "Deleted %1 local files. Kept or unavailable: %2."
 msgstr ""
 
 msgid "Deletion not accepted: download busy; request again"
@@ -1030,6 +1039,10 @@ msgstr "Không bật"
 
 msgid "Keep downloading"
 msgstr ""
+
+#, fuzzy
+msgid "Keep downloads"
+msgstr "Không bật"
 
 msgid "Keep none"
 msgstr ""
@@ -1720,10 +1733,21 @@ msgstr ""
 msgid "Suwayomi source languages"
 msgstr ""
 
-msgid "Sync"
+msgid "Sync from server"
+msgstr ""
+
+msgid "Sync is already running."
 msgstr ""
 
 msgid "Sync pending"
+msgstr ""
+
+msgid ""
+"Synced %1 manga and %2 chapters from the server. Cleared %3 outdated "
+"downloads and set aside %4 local read changes."
+msgstr ""
+
+msgid "Synchronizing with server…"
 msgstr ""
 
 msgid ""
@@ -1757,6 +1781,11 @@ msgid ""
 msgstr ""
 
 msgid "The next chapter has unfinished download work."
+msgstr ""
+
+msgid ""
+"The server Library no longer contains %1 manga with %2 local files. Delete "
+"these downloads?"
 msgstr ""
 
 msgid ""

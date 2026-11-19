@@ -55,7 +55,7 @@ working on setups where the native end-action menu is hidden. The in-reader
 chapters can be selected directly, while unavailable chapters remain visible as
 placeholders.
 
-The title-bar menu offers **Library** and **Suwayomi home**. Home provides **Browse** for source search and extensions, **Sync** for pending read/unread changes, and **Settings**. Back from the Library root exits the plugin.
+The title-bar menu offers **Library** and **Suwayomi home**. Home provides **Browse** for source search and extensions, **Sync from server** to reload local state from the server, and **Settings**. Back from the Library root exits the plugin.
 
 Browse manga results default to List when no view preference is saved. Existing saved choices are preserved. Tap the small menu icon at the bottom left to choose **List**, **Cover only**, or **Cover with text** (titles below the covers). Your choice is saved, and switching views keeps your place. Tap a manga to open it. Grids adapt to the screen width; paging and status messages remain full-width rows.
 
@@ -63,6 +63,8 @@ The Browse source-language filter persists independently of the viewing language
 Chinese is selected by default when no source-language preference has been saved.
 Adding or removing a language updates the source list immediately and is retained
 across plugin and KOReader restarts.
+
+**Sync from server** in Home or Settings reloads the server Library and the chapter lists of locally tracked manga still on that shelf. The server's read/unread flags take precedence for those chapters. Pending local choices that disagree are set aside in settings, and outdated download jobs are cleared so a fresh download can use the current server. A failed or incomplete fetch leaves the saved state in place. If a manga leaving the shelf still has recorded local files, Sync applies the server snapshot first and then offers to keep or delete those files. Downloads are kept unless you confirm deletion.
 
 ### Read offline
 
@@ -91,7 +93,7 @@ retires the previous screen branch while device downloads continue.
 Choose **Settings > 语言 / Language** for **中文** or **English**; the choice is
 saved and takes effect immediately without changing KOReader's language. Before
 an explicit choice, a Chinese KOReader locale selects Chinese; others use English.
-Settings also contains **Sync** and **Close plugin**.
+Settings also contains **Sync from server** and **Close plugin**.
 
 Download controls live in the manga's ordinary chapter directory. Its title menu
 offers selection-based downloads, **Download options**, **Auto-download**,

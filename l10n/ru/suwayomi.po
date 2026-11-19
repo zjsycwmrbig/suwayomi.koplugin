@@ -685,6 +685,10 @@ msgstr ""
 msgid "Could not save saved filter."
 msgstr "Не удалось сохранить фильтр."
 
+#, fuzzy
+msgid "Could not save server sync."
+msgstr "Не удалось сохранить фильтр."
+
 msgid "Could not start chapter download"
 msgstr "Не удалось начать загрузку главы"
 
@@ -721,6 +725,9 @@ msgstr "Не удалось начать загрузку источников: 
 #, fuzzy
 msgid "Could not sync settings."
 msgstr "Не удалось сохранить настройки."
+
+msgid "Could not sync with server. Local state was kept."
+msgstr ""
 
 msgid "Could not update auto-download: %1"
 msgstr "Не удалось изменить автозагрузку: %1"
@@ -874,6 +881,10 @@ msgstr[2] "В очередь добавлено %1 выбранных глав."
 
 msgid "Deleted %1 local downloads; %2 skipped or failed."
 msgstr ""
+
+#, fuzzy
+msgid "Deleted %1 local files. Kept or unavailable: %2."
+msgstr "Настройки удаления глав недоступны."
 
 msgid "Deletion not accepted: download busy; request again"
 msgstr "Удаление не принято: загрузка занята; повторите запрос"
@@ -1189,6 +1200,10 @@ msgid "Keep download"
 msgstr "Не отменять загрузки"
 
 msgid "Keep downloading"
+msgstr "Не отменять загрузки"
+
+#, fuzzy
+msgid "Keep downloads"
 msgstr "Не отменять загрузки"
 
 msgid "Keep none"
@@ -1954,12 +1969,24 @@ msgstr "Настройка Suwayomi: подключение (%1)"
 msgid "Suwayomi source languages"
 msgstr "Языки источников Suwayomi"
 
-msgid "Sync"
-msgstr "Синхронизация"
+msgid "Sync from server"
+msgstr ""
+
+#, fuzzy
+msgid "Sync is already running."
+msgstr "Синхронизация состояния прочтения уже выполняется."
 
 #, fuzzy
 msgid "Sync pending"
 msgstr "По возрастанию"
+
+msgid ""
+"Synced %1 manga and %2 chapters from the server. Cleared %3 outdated "
+"downloads and set aside %4 local read changes."
+msgstr ""
+
+msgid "Synchronizing with server…"
+msgstr ""
 
 msgid ""
 "Tap the first chapter, then the last chapter of the range. Existing "
@@ -1994,6 +2021,11 @@ msgstr ""
 #, fuzzy
 msgid "The next chapter has unfinished download work."
 msgstr "Эта глава не скачана."
+
+msgid ""
+"The server Library no longer contains %1 manga with %2 local files. Delete "
+"these downloads?"
+msgstr ""
 
 msgid ""
 "The server rejected the chapter request. Check connection settings, then "

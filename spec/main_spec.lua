@@ -133,7 +133,7 @@ describe("suwayomi plugin", function()
 
         assert.are.equal("Library", runtime.shown_home_dialog.actions[1].text)
         assert.are.equal("Browse", runtime.shown_home_dialog.actions[2].text)
-        assert.are.equal("Sync", runtime.shown_home_dialog.actions[3].text)
+        assert.are.equal("Sync from server", runtime.shown_home_dialog.actions[3].text)
         assert.are.equal("Settings", runtime.shown_home_dialog.actions[4].text)
         assert.are.equal("Close plugin", runtime.shown_home_dialog.actions[5].text)
     end)

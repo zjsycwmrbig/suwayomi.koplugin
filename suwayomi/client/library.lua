@@ -442,7 +442,7 @@ local function reconstructLibrary(self, scope)
     return listing
 end
 
-function SuwayomiClient:showLibrary()
+function SuwayomiClient:showLibrary(options)
     if self.plugin.suwayomi_host_retired then return end
     self:cancelLibraryNetworkRequests()
     if self.plugin.getNavigation then self.plugin:getNavigation():closeAll() end
@@ -461,7 +461,7 @@ function SuwayomiClient:showLibrary()
     renderLibrary(self, session)
     if session.scope then
         if self.plugin.schedulePendingReadSync then self.plugin:schedulePendingReadSync(credentials) end
-        refreshLibrary(self, session, true)
+        if not (options and options.use_saved_snapshot and listing) then refreshLibrary(self, session, true) end
     end
     return session.category_menu or session.manga_menu
 end

@@ -143,11 +143,13 @@ function Methods:deleteChapterFromDeviceWithOptions(manga, chapter, options)
         if not target then return deletionFailed(target_error) end
     end
 
-    local resolved, metadata_path, metadata_paths = pcall(self.getKoreaderMetadataPathForDocument, self, chapter_path)
-    if not resolved or not metadata_path then
-        return deletionFailed()
+    local paths = {}
+    if not options.keep_reading_metadata then
+        local resolved, metadata_path, metadata_paths = pcall(self.getKoreaderMetadataPathForDocument, self, chapter_path)
+        if not resolved or not metadata_path then return deletionFailed() end
+        paths = metadata_paths or metadata_path
     end
-    local removed = self:removeChapterArchiveAndSidecars(chapter_path, metadata_paths or metadata_path, function()
+    local removed = self:removeChapterArchiveAndSidecars(chapter_path, paths, function()
         return removal:validateTarget(target)
     end)
     if not removed then

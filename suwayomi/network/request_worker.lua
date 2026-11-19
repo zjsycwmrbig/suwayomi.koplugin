@@ -114,6 +114,27 @@ local function fetchLibrarySnapshot(credentials, filters)
 end
 
 
+local function fetchServerSyncSnapshot(credentials, request)
+    local snapshot = fetchLibrarySnapshot(credentials, request.scanlator_filters)
+    if not snapshot.ok then return snapshot end
+    local limit = SubprocessJob.max_result_bytes or 4 * 1024 * 1024
+    local bytes = #json.encode(snapshot)
+    snapshot.chapter_lists = {}
+    for _, manga in ipairs(snapshot.manga) do
+        local id = tostring(manga.id)
+        if request.tracked_manga[id] then
+            local result = SuwayomiAPI.queryChaptersForManga(credentials, manga.id, { max_result_bytes = limit })
+            if not result.ok then return result end
+            bytes = bytes + #json.encode(result.chapters) + #id + 8
+            if bytes > limit then
+                return { ok = false, error = "Suwayomi sync snapshot is too large to load completely." }
+            end
+            snapshot.chapter_lists[id] = result.chapters
+        end
+    end
+    return snapshot
+end
+
 local function normalizeResult(result)
     if type(result) ~= "table" then
         return {
@@ -164,6 +185,9 @@ function RequestWorker:run(credentials, request, result_path)
         end
         if request.action == "update_manga_library_state" then
             return SuwayomiAPI.updateMangaLibraryState(credentials, request.manga_id, request.in_library == true)
+        end
+        if request.action == "fetch_server_sync" then
+            return fetchServerSyncSnapshot(credentials, request)
         end
         if request.action == "fetch_library_snapshot" then
             return fetchLibrarySnapshot(credentials, request.scanlator_filters)

@@ -84,9 +84,9 @@ function Methods:buildHomeActions()
         },
         {
             id = "sync",
-            text = I18n.t("Sync"),
+            text = I18n.t("Sync from server"),
             callback = function()
-                self:syncReadStateNow()
+                self:syncLibraryFromServer()
             end,
         },
         {

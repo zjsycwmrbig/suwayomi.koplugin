@@ -590,6 +590,9 @@ msgstr "无法保存章节信息，重启后可能无法使用。"
 msgid "Could not save saved filter."
 msgstr "无法保存筛选器。"
 
+msgid "Could not save server sync."
+msgstr "无法保存同步结果。"
+
 msgid "Could not start chapter download"
 msgstr "无法开始章节下载"
 
@@ -625,6 +628,9 @@ msgstr "无法开始加载源：未知错误"
 
 msgid "Could not sync settings."
 msgstr "无法将设置同步到存储设备。"
+
+msgid "Could not sync with server. Local state was kept."
+msgstr "无法从服务器同步，已保留本地状态。"
 
 msgid "Could not update auto-download: %1"
 msgstr "无法更新自动下载：%1"
@@ -754,6 +760,9 @@ msgstr[0] "已删除 %1 个本地章节下载。"
 
 msgid "Deleted %1 local downloads; %2 skipped or failed."
 msgstr "已删除 %1 个本地下载；%2 个跳过或失败。"
+
+msgid "Deleted %1 local files. Kept or unavailable: %2."
+msgstr "已删除 %1 个本地文件，另有 %2 个已保留或无法删除。"
 
 msgid "Deletion not accepted: download busy; request again"
 msgstr "删除请求未被接受：下载正在进行中；请稍后重新请求"
@@ -1056,6 +1065,9 @@ msgstr "保留下载"
 
 msgid "Keep downloading"
 msgstr "继续下载"
+
+msgid "Keep downloads"
+msgstr "保留下载"
 
 msgid "Keep none"
 msgstr "不保留"
@@ -1768,11 +1780,24 @@ msgstr "Suwayomi 设置：连接（%1）"
 msgid "Suwayomi source languages"
 msgstr "Suwayomi 源语言"
 
-msgid "Sync"
-msgstr "同步"
+msgid "Sync from server"
+msgstr "从服务器同步"
+
+msgid "Sync is already running."
+msgstr "同步正在进行。"
 
 msgid "Sync pending"
 msgstr "等待同步"
+
+msgid ""
+"Synced %1 manga and %2 chapters from the server. Cleared %3 outdated "
+"downloads and set aside %4 local read changes."
+msgstr ""
+"已从服务器同步 %1 部漫画、%2 个章节，清理了 %3 条过期下载任务，保留了 %4 条未"
+"应用的本地已读改动。"
+
+msgid "Synchronizing with server…"
+msgstr "正在与服务器同步…"
 
 msgid ""
 "Tap the first chapter, then the last chapter of the range. Existing "
@@ -1806,6 +1831,12 @@ msgstr "无法验证下一章，这不代表文件已损坏。"
 
 msgid "The next chapter has unfinished download work."
 msgstr "下一章还有未完成的下载任务。"
+
+msgid ""
+"The server Library no longer contains %1 manga with %2 local files. Delete "
+"these downloads?"
+msgstr ""
+"服务器书架已移除 %1 部仍有本地下载的漫画，共 %2 个文件。要删除这些下载吗？"
 
 msgid ""
 "The server rejected the chapter request. Check connection settings, then "

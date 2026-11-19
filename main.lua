@@ -32,6 +32,7 @@ local DownloadsController = require("suwayomi/downloads/controller")
 local ReadSyncLedger = require("suwayomi/readsync/ledger")
 local KoreaderMetadata = require("suwayomi/readsync/koreader_metadata")
 local ReadSyncController = require("suwayomi/readsync/controller")
+local ServerSyncController = require("suwayomi/readsync/server_controller")
 local I18n = require("suwayomi/i18n")
 
 local SuwayomiPlugin = WidgetContainer:extend{
@@ -154,6 +155,7 @@ function SuwayomiPlugin:closeSuwayomiPlugin()
         if self.cancelExtensionWorker then
             self:cancelExtensionWorker()
         end
+        self:cancelServerSync()
         if self.cancelPendingReadSync then
             self:cancelPendingReadSync({ close = true })
         end
@@ -170,6 +172,7 @@ function SuwayomiPlugin:closeSuwayomiPlugin()
 end
 
 function SuwayomiPlugin:onCloseWidget()
+    self:cancelServerSync()
     self:removeReaderFinishAdapter()
     self:retireChapterHost()
     self:cancelSourceFetchWorker()
@@ -259,6 +262,7 @@ local CONTROLLER_MODULES = {
     ReadSyncLedger,
     KoreaderMetadata,
     ReadSyncController,
+    ServerSyncController,
 }
 
 -- Method installation keeps KOReader callback names stable while moving feature logic into documented modules.

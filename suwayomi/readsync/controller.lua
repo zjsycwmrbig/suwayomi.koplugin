@@ -41,6 +41,7 @@ end
 
 
 function Methods:startPendingReadSyncWorker(credentials, max_count)
+    if self.server_sync_request then return false, 0 end
     if self.pending_read_sync_active then
         return true, 0
     end

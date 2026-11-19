@@ -63,6 +63,27 @@ describe("suwayomi/network/request_worker", function()
         end
     end)
 
+    it("loads stored chapters for tracked Library manga and rejects a failed list", function()
+        local queried = {}
+        local api = require("suwayomi/api")
+        api.queryChaptersForManga = function(_, id)
+            queried[#queried + 1] = id
+            if id == "m3" then return { ok = false, error = "offline" } end
+            return { ok = true, chapters = { { id = "1", is_read = false } } }
+        end
+        local worker = require("suwayomi/network/request_worker")
+        local request = { action = "fetch_server_sync", tracked_manga = { m2 = true, outside = true } }
+        local result = worker:run({}, request, "/sync")
+        assert.is_true(result.ok)
+        assert.same({ "m2" }, queried)
+        assert.same({ m2 = { { id = "1", is_read = false } } }, result.chapter_lists)
+
+        request.tracked_manga.m3 = true
+        local failed = worker:run({}, request, "/sync")
+        assert.is_false(failed.ok)
+        assert.is_nil(failed.chapter_lists)
+    end)
+
     after_each(function()
         io.open = original_io_open
         clear_modules()
